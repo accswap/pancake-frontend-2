@@ -27,10 +27,10 @@ const IndexPage = ({ totalTx30Days, addressCount30Days, tvl }) => {
 }
 
 // Values fetched from TheGraph and BitQuery jan 24, 2022
-const txCount = 54780336
-const addressCount = 4425459
+const txCount = 644327
+const addressCount = 113507
 
-const tvl = 6082955532.115718
+const tvl = 9968833.04
 
 export const getStaticProps: GetStaticProps = async () => {
   const totalTxQuery = gql`
@@ -85,7 +85,7 @@ export const getStaticProps: GetStaticProps = async () => {
 
   const usersQuery = gql`
     query userCount($since: ISO8601DateTime, $till: ISO8601DateTime) {
-      ethereum(network: bsc) {
+      ethereum(network: mainnet) {
         dexTrades(exchangeName: { in: ["Pancake", "Pancake v2"] }, date: { since: $since, till: $till }) {
           count(uniq: senders)
         }
@@ -115,7 +115,7 @@ export const getStaticProps: GetStaticProps = async () => {
         pancakeFactories(first: 1) {
           totalLiquidityUSD
         }
-        token(id: "0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82") {
+        token(id: "0xddBa66C1eBA873e26Ac0215Ca44892a07d83aDF5") {
           derivedUSD
         }
       }
@@ -136,5 +136,7 @@ export const getStaticProps: GetStaticProps = async () => {
     revalidate: 60 * 60 * 24 * 30, // 30 days
   }
 }
+
+IndexPage.chains = []
 
 export default IndexPage

@@ -1,6 +1,7 @@
+import { useMemo } from 'react'
 import styled from 'styled-components'
-import { Text, Flex, Box, CloseIcon, IconButton, useMatchBreakpointsContext } from '@pancakeswap/uikit'
-import { useTranslation } from 'contexts/Localization'
+import { Text, Flex, Box, CloseIcon, IconButton, useMatchBreakpoints } from '@pancakeswap/uikit'
+import { useTranslation } from '@pancakeswap/localization'
 import { usePhishingBannerManager } from 'state/user/hooks'
 
 const Container = styled(Flex)`
@@ -9,10 +10,10 @@ const Container = styled(Flex)`
   padding: 12px;
   align-items: center;
   background: linear-gradient(0deg, rgba(39, 38, 44, 0.4), rgba(39, 38, 44, 0.4)),
-    linear-gradient(180deg, #8051d6 0%, #492286 100%);
+    linear-gradient(180deg, #09070c 22%, #9370db 100%);
   ${({ theme }) => theme.mediaQueries.md} {
     padding: 0px;
-    background: linear-gradient(180deg, #8051d6 0%, #492286 100%);
+    background: linear-gradient(180deg, #09070c 22%, #9370db 100%);
   }
 `
 
@@ -39,12 +40,14 @@ const SpeechBubble = styled.div`
   }
 `
 
-const PhishingWarningBanner: React.FC = () => {
+const PhishingWarningBanner: React.FC<React.PropsWithChildren> = () => {
   const { t } = useTranslation()
   const [, hideBanner] = usePhishingBannerManager()
-  const { isMobile, isMd } = useMatchBreakpointsContext()
-  const warningText = t("please make sure you're visiting https://pancakeswap.finance - check the URL carefully.")
-  const warningTextAsParts = warningText.split(/(https:\/\/pancakeswap.finance)/g)
+  const { isMobile, isMd } = useMatchBreakpoints()
+  const warningTextAsParts = useMemo(() => {
+    const warningText = t("please make sure you're visiting https://shadowswap.xyz/ - check the URL carefully.")
+    return warningText.split(/(https:\/\/shadowswap.xyz)/g)
+  }, [t])
   const warningTextComponent = (
     <>
       <Text as="span" color="warning" small bold textTransform="uppercase">
@@ -56,8 +59,8 @@ const PhishingWarningBanner: React.FC = () => {
           key={i}
           small
           as="span"
-          bold={text === 'https://pancakeswap.finance'}
-          color={text === 'https://pancakeswap.finance' ? '#FFFFFF' : '#BDC2C4'}
+          bold={text === 'https://shadowswap.xyz/'}
+          color={text === 'https://shadowswap.xyz/' ? '#FFFFFF' : '#BDC2C4'}
         >
           {text}
         </Text>
@@ -76,11 +79,18 @@ const PhishingWarningBanner: React.FC = () => {
       ) : (
         <>
           <InnerContainer>
-            <picture>
-              <source type="image/webp" srcSet="/images/decorations/phishing-warning-bunny.webp" />
-              <source type="image/png" srcSet="/images/decorations/phishing-warning-bunny.png" />
-              <img src="/images/decorations/phishing-warning-bunny.png" alt="phishing-warning" width="92px" />
-            </picture>
+            <img
+              src="/images/decorations/phishing-warning-shadow.webp"
+              alt="phishing-warning"
+              width="92px"
+              onError={(e) => {
+                const fallbackSrc = '/images/decorations/phishing-warning-shadow.png'
+                if (!e.currentTarget.src.endsWith(fallbackSrc)) {
+                  // eslint-disable-next-line no-param-reassign
+                  e.currentTarget.src = fallbackSrc
+                }
+              }}
+            />
             <SpeechBubble>{warningTextComponent}</SpeechBubble>
           </InnerContainer>
           <IconButton onClick={hideBanner} variant="text">

@@ -4,147 +4,191 @@ import {
   SwapIcon,
   SwapFillIcon,
   EarnFillIcon,
+  NFTAMMFillIcon,
   EarnIcon,
-  TrophyIcon,
-  TrophyFillIcon,
-  NftIcon,
-  NftFillIcon,
   MoreIcon,
+  NFTAMMIcon,
+  LendIcon,
+  LendFillIcon,
 } from '@pancakeswap/uikit'
-import { ContextApi } from 'contexts/Localization/types'
-import { nftsBaseUrl } from 'views/Nft/market/constants'
-import { perpLangMap } from 'utils/getPerpetualLanguageCode'
+import { ContextApi } from '@pancakeswap/localization'
 import { DropdownMenuItems } from '@pancakeswap/uikit/src/components/DropdownMenu/types'
+import { SUPPORT_ONLY_BSC } from 'config/constants/supportChains'
 
 export type ConfigMenuDropDownItemsType = DropdownMenuItems & { hideSubNav?: boolean }
-export type ConfigMenuItemsType = Omit<MenuItemsType, 'items'> & { hideSubNav?: boolean } & {
+export type ConfigMenuItemsType = Omit<MenuItemsType, 'items'> & { hideSubNav?: boolean; image?: string } & {
   items?: ConfigMenuDropDownItemsType[]
 }
 
-const config: (t: ContextApi['t'], languageCode?: string) => ConfigMenuItemsType[] = (t, languageCode) => [
-  {
-    label: t('Trade'),
-    icon: SwapIcon,
-    fillIcon: SwapFillIcon,
-    href: '/swap',
-    showItemsOnMobile: false,
-    items: [
+const addMenuItemSupported = (item, chainId) => {
+  if (!chainId || !item.supportChainIds) {
+    return item
+  }
+  if (item.supportChainIds?.includes(chainId)) {
+    return item
+  }
+  return {
+    ...item,
+    disabled: true,
+  }
+}
+
+const config: (t: ContextApi['t'], isDark: boolean, languageCode?: string, chainId?: number) => ConfigMenuItemsType[] =
+  (t, isDark, languageCode, chainId) =>
+    [
       {
-        label: t('Swap'),
+        label: t('Trade'),
+        icon: SwapIcon,
+        fillIcon: SwapFillIcon,
         href: '/swap',
+        showItemsOnMobile: false,
+        items: [
+          {
+            label: t('Swap'),
+            href: '/swap',
+          },
+          {
+            label: t('Liquidity'),
+            href: '/liquidity',
+          },
+          {
+            label: t('Gnosis Safe'),
+            href: 'https://safe.coredao.org',
+            type: DropdownMenuItemType.EXTERNAL_LINK,
+          },
+          {
+            label: t('Bridge'),
+            href: 'https://bridge.coredao.org/',
+            type: DropdownMenuItemType.EXTERNAL_LINK,
+          },
+        ].map((item) => addMenuItemSupported(item, chainId)),
       },
       {
-        label: t('Limit'),
-        href: '/limit-orders',
-      },
-      {
-        label: t('Liquidity'),
-        href: '/liquidity',
-      },
-      {
-        label: t('Perpetual'),
-        href: `https://perp.pancakeswap.finance/${perpLangMap(languageCode)}/futures/BTCUSDT`,
-        type: DropdownMenuItemType.EXTERNAL_LINK,
-      },
-    ],
-  },
-  {
-    label: t('Earn'),
-    href: '/farms',
-    icon: EarnIcon,
-    fillIcon: EarnFillIcon,
-    items: [
-      {
-        label: t('Farms'),
+        label: t('Earn'),
         href: '/farms',
+        icon: EarnIcon,
+        fillIcon: EarnFillIcon,
+        image: '/images/decorations/pe2.png',
+        supportChainIds: SUPPORT_ONLY_BSC,
+        items: [
+          {
+            label: t('Farms'),
+            href: '/farms',
+          },
+          {
+            label: t('Pools'),
+            href: '/pools',
+            supportChainIds: SUPPORT_ONLY_BSC,
+          },
+        ].map((item) => addMenuItemSupported(item, chainId)),
       },
+
       {
-        label: t('Pools'),
-        href: '/pools',
+        label: t('Lend'),
+        href: '/lend',
+        icon: LendIcon,
+        fillIcon: LendFillIcon,
+        supportChainIds: SUPPORT_ONLY_BSC,
+        items: [
+          {
+            label: t('Supply Market'),
+            href: '/NotFound',
+          },
+          {
+            label: t('Borrow Market'),
+            href: '/NotFound',
+            supportChainIds: SUPPORT_ONLY_BSC,
+          },
+        ].map((item) => addMenuItemSupported(item, chainId)),
       },
-    ],
-  },
-  {
-    label: t('Win'),
-    href: '/prediction',
-    icon: TrophyIcon,
-    fillIcon: TrophyFillIcon,
-    items: [
+
       {
-        label: t('Trading Competition'),
-        href: '/competition',
-        hideSubNav: true,
+        label: t('Nft Amm'),
+        href: '/NotFound',
+        icon: NFTAMMIcon,
+        fillIcon: NFTAMMFillIcon,
+        supportChainIds: SUPPORT_ONLY_BSC,
+        items: [
+          {
+            label: t('View Collections'),
+            href: '/NotFound',
+          },
+          {
+            label: t('List Your NFTs'),
+            href: '/NotFound',
+            supportChainIds: SUPPORT_ONLY_BSC,
+          },
+          {
+            label: t('Create A New Pool'),
+            href: '/NotFound',
+          },
+        ].map((item) => addMenuItemSupported(item, chainId)),
       },
+
       {
-        label: t('Prediction (BETA)'),
-        href: '/prediction',
-      },
-      {
-        label: t('Lottery'),
-        href: '/lottery',
-      },
-    ],
-  },
-  {
-    label: t('NFT'),
-    href: `${nftsBaseUrl}`,
-    icon: NftIcon,
-    fillIcon: NftFillIcon,
-    items: [
-      {
-        label: t('Overview'),
-        href: `${nftsBaseUrl}`,
-      },
-      {
-        label: t('Collections'),
-        href: `${nftsBaseUrl}/collections`,
-      },
-      {
-        label: t('Activity'),
-        href: `${nftsBaseUrl}/activity`,
-      },
-    ],
-  },
-  {
-    label: '',
-    href: '/info',
-    icon: MoreIcon,
-    hideSubNav: true,
-    items: [
-      {
-        label: t('Info'),
+        label: '',
         href: '/info',
+        icon: MoreIcon,
+        hideSubNav: true,
+        items: [
+          {
+            label: t('Info'),
+            href: '/NotFound',
+            supportChainIds: SUPPORT_ONLY_BSC,
+          },
+          {
+            label: t('IFO'),
+            href: '/ifo',
+            supportChainIds: SUPPORT_ONLY_BSC,
+          },
+          {
+            label: t('Shadow Puppet'),
+            href: '/shadow-puppet',
+            supportChainIds: SUPPORT_ONLY_BSC,
+          },
+          {
+            label: t('Voting'),
+            href: '/voting',
+            supportChainIds: SUPPORT_ONLY_BSC,
+          },
+          {
+            type: DropdownMenuItemType.DIVIDER,
+          },
+          {
+            type: DropdownMenuItemType.DIVIDER,
+          },
+          {
+            label: t('Blog'),
+            href: 'https://medium.com/@shadowswap',
+            type: DropdownMenuItemType.EXTERNAL_LINK,
+          },
+          {
+            label: t('Docs'),
+            href: 'https://docs.shadowswap.xyz',
+            type: DropdownMenuItemType.EXTERNAL_LINK,
+          },
+          {
+            label: t('Defillama'),
+            href: 'https://defillama.com/protocol/shadowswap',
+            type: DropdownMenuItemType.EXTERNAL_LINK,
+          },
+          {
+            label: t('GeckoTerminal'),
+            href: 'https://www.geckoterminal.com/core/shadowswap/pools',
+            type: DropdownMenuItemType.EXTERNAL_LINK,
+          },
+          {
+            label: t('Ave.ai'),
+            href: 'https://ave.ai/token/0xddba66c1eba873e26ac0215ca44892a07d83adf5-core?from=Default',
+            type: DropdownMenuItemType.EXTERNAL_LINK,
+          },
+          {
+            label: t('DexScreener'),
+            href: 'https://dexscreener.com/core/shadowswap',
+            type: DropdownMenuItemType.EXTERNAL_LINK,
+          },
+        ].map((item) => addMenuItemSupported(item, chainId)),
       },
-      {
-        label: t('IFO'),
-        href: '/ifo',
-      },
-      {
-        label: t('Voting'),
-        href: '/voting',
-      },
-      {
-        type: DropdownMenuItemType.DIVIDER,
-      },
-      {
-        label: t('Leaderboard'),
-        href: '/teams',
-      },
-      {
-        type: DropdownMenuItemType.DIVIDER,
-      },
-      {
-        label: t('Blog'),
-        href: 'https://medium.com/pancakeswap',
-        type: DropdownMenuItemType.EXTERNAL_LINK,
-      },
-      {
-        label: t('Docs'),
-        href: 'https://docs.pancakeswap.finance',
-        type: DropdownMenuItemType.EXTERNAL_LINK,
-      },
-    ],
-  },
-]
+    ].map((item) => addMenuItemSupported(item, chainId))
 
 export default config

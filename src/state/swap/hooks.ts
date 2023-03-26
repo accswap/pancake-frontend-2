@@ -1,34 +1,29 @@
-import { Currency, CurrencyAmount, ETHER, Token, Trade } from '@pancakeswap/sdk'
+import { useWeb3React } from '@pancakeswap/wagmi'
+import { ChainId, Currency, CurrencyAmount, Pair, Trade, TradeType } from '@pancakeswap/sdk'
 import { ParsedUrlQuery } from 'querystring'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { DEFAULT_INPUT_CURRENCY, DEFAULT_OUTPUT_CURRENCY, SLOW_INTERVAL } from 'config/constants'
+import { useEffect, useMemo, useState } from 'react'
+import { SLOW_INTERVAL } from 'config/constants'
+import { DEFAULT_INPUT_CURRENCY, DEFAULT_OUTPUT_CURRENCY } from 'config/constants/exchange'
 import useSWRImmutable from 'swr/immutable'
 import { useDispatch, useSelector } from 'react-redux'
 import useActiveWeb3React from 'hooks/useActiveWeb3React'
 import { useTradeExactIn, useTradeExactOut } from 'hooks/Trades'
 import { useRouter } from 'next/router'
-import { useTranslation } from 'contexts/Localization'
+import { useTranslation } from '@pancakeswap/localization'
 import { isAddress } from 'utils'
 import { getDeltaTimestamps } from 'utils/getDeltaTimestamps'
 import { getBlocksFromTimestamps } from 'utils/getBlocksFromTimestamps'
 import { getChangeForPeriod } from 'utils/getChangeForPeriod'
 import { getLpFeesAndApr } from 'utils/getLpFeesAndApr'
-import { computeSlippageAdjustedAmounts } from 'utils/prices'
+import useNativeCurrency from 'hooks/useNativeCurrency'
+import { computeSlippageAdjustedAmounts } from 'utils/exchange'
+import { CAKE, USDC } from '@pancakeswap/tokens'
 import getLpAddress from 'utils/getLpAddress'
 import { getTokenAddress } from 'views/Swap/components/Chart/utils'
-import tryParseAmount from 'utils/tryParseAmount'
-import { AppDispatch, AppState } from '../index'
+import tryParseAmount from '@pancakeswap/utils/tryParseAmount'
+import { AppState, useAppDispatch } from '../index'
 import { useCurrencyBalances } from '../wallet/hooks'
-import {
-  Field,
-  replaceSwapState,
-  selectCurrency,
-  setRecipient,
-  switchCurrencies,
-  typeInput,
-  updateDerivedPairData,
-  updatePairData,
-} from './actions'
+import { Field, replaceSwapState, updateDerivedPairData, updatePairData } from './actions'
 import { SwapState } from './reducer'
 import { useUserSlippageTolerance } from '../user/hooks'
 import fetchPairPriceData from './fetch/fetchPairPriceData'
@@ -48,51 +43,7 @@ export function useSwapState(): AppState['swap'] {
   return useSelector<AppState, AppState['swap']>((state) => state.swap)
 }
 
-export function useSwapActionHandlers(): {
-  onCurrencySelection: (field: Field, currency: Currency) => void
-  onSwitchTokens: () => void
-  onUserInput: (field: Field, typedValue: string) => void
-  onChangeRecipient: (recipient: string | null) => void
-} {
-  const dispatch = useDispatch<AppDispatch>()
-  const onCurrencySelection = useCallback(
-    (field: Field, currency: Currency) => {
-      dispatch(
-        selectCurrency({
-          field,
-          currencyId: currency instanceof Token ? currency.address : currency === ETHER ? 'BNB' : '',
-        }),
-      )
-    },
-    [dispatch],
-  )
-
-  const onSwitchTokens = useCallback(() => {
-    dispatch(switchCurrencies())
-  }, [dispatch])
-
-  const onUserInput = useCallback(
-    (field: Field, typedValue: string) => {
-      dispatch(typeInput({ field, typedValue }))
-    },
-    [dispatch],
-  )
-
-  const onChangeRecipient = useCallback(
-    (recipient: string | null) => {
-      dispatch(setRecipient({ recipient }))
-    },
-    [dispatch],
-  )
-
-  return {
-    onSwitchTokens,
-    onCurrencySelection,
-    onUserInput,
-    onChangeRecipient,
-  }
-}
-
+// TODO: update
 const BAD_RECIPIENT_ADDRESSES: string[] = [
   '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f', // v2 factory
   '0xf164fC0Ec4E93095b804a4795bBe1e041497b92a', // v2 router 01
@@ -104,7 +55,7 @@ const BAD_RECIPIENT_ADDRESSES: string[] = [
  * @param trade to check for the given address
  * @param checksummedAddress address to check in the pairs and tokens
  */
-function involvesAddress(trade: Trade, checksummedAddress: string): boolean {
+function involvesAddress(trade: Trade<Currency, Currency, TradeType>, checksummedAddress: string): boolean {
   return (
     trade.route.path.some((token) => token.address === checksummedAddress) ||
     trade.route.pairs.some((pair) => pair.liquidityToken.address === checksummedAddress)
@@ -146,12 +97,12 @@ export function useDerivedSwapInfo(
   recipient: string,
 ): {
   currencies: { [field in Field]?: Currency }
-  currencyBalances: { [field in Field]?: CurrencyAmount }
-  parsedAmount: CurrencyAmount | undefined
-  v2Trade: Trade | undefined
+  currencyBalances: { [field in Field]?: CurrencyAmount<Currency> }
+  parsedAmount: CurrencyAmount<Currency> | undefined
+  v2Trade: Trade<Currency, Currency, TradeType> | undefined
   inputError?: string
 } {
-  const { account } = useActiveWeb3React()
+  const { account } = useWeb3React()
   const { t } = useTranslation()
 
   const to: string | null = (recipient === null ? account : isAddress(recipient) || null) ?? null
@@ -230,8 +181,8 @@ function parseCurrencyFromURLParameter(urlParam: any): string {
   if (typeof urlParam === 'string') {
     const valid = isAddress(urlParam)
     if (valid) return valid
-    if (urlParam.toUpperCase() === 'BNB') return 'BNB'
-    if (valid === false) return 'BNB'
+    if (urlParam.toUpperCase() === 'CORE') return 'CORE'
+    if (valid === false) return 'CORE'
   }
   return ''
 }
@@ -253,9 +204,14 @@ function validatedRecipient(recipient: any): string | null {
   return null
 }
 
-export function queryParametersToSwapState(parsedQs: ParsedUrlQuery): SwapState {
-  let inputCurrency = parseCurrencyFromURLParameter(parsedQs.inputCurrency) || DEFAULT_INPUT_CURRENCY
-  let outputCurrency = parseCurrencyFromURLParameter(parsedQs.outputCurrency) || DEFAULT_OUTPUT_CURRENCY
+export function queryParametersToSwapState(
+  parsedQs: ParsedUrlQuery,
+  nativeSymbol?: string,
+  defaultOutputCurrency?: string,
+): SwapState {
+  let inputCurrency = parseCurrencyFromURLParameter(parsedQs.inputCurrency) || (nativeSymbol ?? DEFAULT_INPUT_CURRENCY)
+  let outputCurrency =
+    parseCurrencyFromURLParameter(parsedQs.outputCurrency) || (defaultOutputCurrency ?? DEFAULT_OUTPUT_CURRENCY)
   if (inputCurrency === outputCurrency) {
     if (typeof parsedQs.outputCurrency === 'string') {
       inputCurrency = ''
@@ -286,15 +242,15 @@ export function useDefaultsFromURLSearch():
   | { inputCurrencyId: string | undefined; outputCurrencyId: string | undefined }
   | undefined {
   const { chainId } = useActiveWeb3React()
-  const dispatch = useDispatch<AppDispatch>()
+  const dispatch = useAppDispatch()
+  const native = useNativeCurrency()
   const { query } = useRouter()
-  const [result, setResult] = useState<
-    { inputCurrencyId: string | undefined; outputCurrencyId: string | undefined } | undefined
-  >()
+  const [result, setResult] =
+    useState<{ inputCurrencyId: string | undefined; outputCurrencyId: string | undefined } | undefined>()
 
   useEffect(() => {
-    if (!chainId) return
-    const parsed = queryParametersToSwapState(query)
+    if (!chainId || !native) return
+    const parsed = queryParametersToSwapState(query, native.symbol, CAKE[chainId]?.address ?? USDC[chainId]?.address)
 
     dispatch(
       replaceSwapState({
@@ -307,7 +263,7 @@ export function useDefaultsFromURLSearch():
     )
 
     setResult({ inputCurrencyId: parsed[Field.INPUT].currencyId, outputCurrencyId: parsed[Field.OUTPUT].currencyId })
-  }, [dispatch, chainId, query])
+  }, [dispatch, chainId, query, native])
 
   return result
 }
@@ -449,9 +405,9 @@ export const useFetchPairPrices = ({
   return { pairPrices, pairId }
 }
 
-export const useLPApr = (pair) => {
+export const useLPApr = (pair?: Pair) => {
   const { data: poolData } = useSWRImmutable(
-    pair ? ['LP7dApr', pair.liquidityToken.address] : null,
+    pair && pair.chainId === ChainId.BSC ? ['LP7dApr', pair.liquidityToken.address] : null,
     async () => {
       const timestampsArray = getDeltaTimestamps()
       const blocks = await getBlocksFromTimestamps(timestampsArray, 'desc', 1000)
@@ -474,7 +430,7 @@ export const useLPApr = (pair) => {
       const [volumeUSDWeek] = getChangeForPeriod(current?.volumeUSD, week?.volumeUSD, twoWeeks?.volumeUSD)
       const liquidityUSD = current ? current.reserveUSD : 0
       const { lpApr7d } = getLpFeesAndApr(volumeUSD, volumeUSDWeek, liquidityUSD)
-      return { lpApr7d }
+      return lpApr7d ? { lpApr7d } : null
     },
     {
       refreshInterval: SLOW_INTERVAL,

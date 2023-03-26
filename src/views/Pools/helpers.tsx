@@ -4,6 +4,12 @@ import { DeserializedPool } from 'state/types'
 import { BIG_ZERO } from 'utils/bigNumber'
 import { getApy } from 'utils/compoundApyHelpers'
 import { getBalanceNumber, getFullDisplayBalance, getDecimalAmount } from 'utils/formatBalance'
+import memoize from 'lodash/memoize'
+
+// min deposit and withdraw amount
+export const MIN_LOCK_AMOUNT = new BigNumber(10000000000000)
+
+export const ENABLE_EXTEND_LOCK_AMOUNT = new BigNumber(100000000000000)
 
 export const convertSharesToCake = (
   shares: BigNumber,
@@ -53,16 +59,15 @@ export const getAprData = (pool: DeserializedPool, performanceFee: number) => {
 
 export const getCakeVaultEarnings = (
   account: string,
-  cakeAtLastUserAction: BigNumber,
+  shdwAtLastUserAction: BigNumber,
   userShares: BigNumber,
   pricePerFullShare: BigNumber,
   earningTokenPrice: number,
   fee?: BigNumber,
 ) => {
-  const hasAutoEarnings =
-    account && cakeAtLastUserAction && cakeAtLastUserAction.gt(0) && userShares && userShares.gt(0)
+  const hasAutoEarnings = account && shdwAtLastUserAction?.gt(0) && userShares?.gt(0)
   const { cakeAsBigNumber } = convertSharesToCake(userShares, pricePerFullShare)
-  const autoCakeProfit = cakeAsBigNumber.minus(fee || BIG_ZERO).minus(cakeAtLastUserAction)
+  const autoCakeProfit = cakeAsBigNumber.minus(fee || BIG_ZERO).minus(shdwAtLastUserAction)
   const autoCakeToDisplay = autoCakeProfit.gte(0) ? getBalanceNumber(autoCakeProfit, 18) : 0
 
   const autoUsdProfit = autoCakeProfit.times(earningTokenPrice)
@@ -70,12 +75,20 @@ export const getCakeVaultEarnings = (
   return { hasAutoEarnings, autoCakeToDisplay, autoUsdToDisplay }
 }
 
-export const getPoolBlockInfo = (pool: DeserializedPool, currentBlock: number) => {
-  const { startBlock, endBlock, isFinished } = pool
-  const shouldShowBlockCountdown = Boolean(!isFinished && startBlock && endBlock)
-  const blocksUntilStart = Math.max(startBlock - currentBlock, 0)
-  const blocksRemaining = Math.max(endBlock - currentBlock, 0)
-  const hasPoolStarted = blocksUntilStart === 0 && blocksRemaining > 0
-  const blocksToDisplay = hasPoolStarted ? blocksRemaining : blocksUntilStart
-  return { shouldShowBlockCountdown, blocksUntilStart, blocksRemaining, hasPoolStarted, blocksToDisplay }
+export const getPoolBlockInfo = memoize(
+  (pool: DeserializedPool, currentBlock: number) => {
+    const { startBlock, endBlock, isFinished } = pool
+    const shouldShowBlockCountdown = Boolean(!isFinished && startBlock && endBlock)
+    const blocksUntilStart = Math.max(startBlock - currentBlock, 0)
+    const blocksRemaining = Math.max(endBlock - currentBlock, 0)
+    const hasPoolStarted = blocksUntilStart === 0 && blocksRemaining > 0
+    const blocksToDisplay = hasPoolStarted ? blocksRemaining : blocksUntilStart
+    return { shouldShowBlockCountdown, blocksUntilStart, blocksRemaining, hasPoolStarted, blocksToDisplay }
+  },
+  (pool, currentBlock) => `${pool.startBlock}#${pool.endBlock}#${pool.isFinished}#${currentBlock}`,
+)
+
+export const getICakeWeekDisplay = (ceiling: BigNumber) => {
+  const weeks = new BigNumber(ceiling).div(60).div(60).div(24).div(7)
+  return Math.round(weeks.toNumber())
 }

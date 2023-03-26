@@ -1,17 +1,16 @@
 /* eslint-disable no-param-reassign */
 import { arrayify } from '@ethersproject/bytes'
 import { parseBytes32String } from '@ethersproject/strings'
-import { Currency, currencyEquals, ETHER, Token } from '@pancakeswap/sdk'
-import { createSelector } from '@reduxjs/toolkit'
+import { Currency, Token } from '@pancakeswap/sdk'
+import { TokenAddressMap } from '@pancakeswap/tokens'
 import { GELATO_NATIVE } from 'config/constants'
-import { CHAIN_ID } from 'config/constants/networks'
 import useActiveWeb3React from 'hooks/useActiveWeb3React'
+import { useAtomValue } from 'jotai'
 import { useMemo } from 'react'
 import { useSelector } from 'react-redux'
-import { TokenAddressMap } from 'state/types'
 import {
-  combinedTokenMapFromActiveUrlsSelector,
-  combinedTokenMapFromOfficialsUrlsSelector,
+  combinedTokenMapFromActiveUrlsAtom,
+  combinedTokenMapFromOfficialsUrlsAtom,
   useUnsupportedTokenList,
   useWarningTokenList,
 } from '../state/lists/hooks'
@@ -19,73 +18,72 @@ import { NEVER_RELOAD, useSingleCallResult } from '../state/multicall/hooks'
 import useUserAddedTokens, { userAddedTokenSelector } from '../state/user/hooks/useUserAddedTokens'
 import { isAddress } from '../utils'
 import { useBytes32TokenContract, useTokenContract } from './useContract'
+import useNativeCurrency from './useNativeCurrency'
 
-const mapWithoutUrls = (tokenMap: TokenAddressMap) =>
-  Object.keys(tokenMap[CHAIN_ID]).reduce<{ [address: string]: Token }>((newMap, address) => {
-    newMap[address] = tokenMap[CHAIN_ID][address].token
+const mapWithoutUrls = (tokenMap: TokenAddressMap, chainId: number) =>
+  Object.keys(tokenMap[chainId] || {}).reduce<{ [address: string]: Token }>((newMap, address) => {
+    newMap[address] = tokenMap[chainId][address].token
     return newMap
   }, {})
-
-const allTokenSelector = createSelector(
-  [combinedTokenMapFromActiveUrlsSelector, userAddedTokenSelector],
-  (tokenMap, userAddedTokens) => {
-    return (
-      userAddedTokens
-        // reduce into all ALL_TOKENS filtered by the current chain
-        .reduce<{ [address: string]: Token }>(
-          (tokenMap_, token) => {
-            tokenMap_[token.address] = token
-            return tokenMap_
-          },
-          // must make a copy because reduce modifies the map, and we do not
-          // want to make a copy in every iteration
-          mapWithoutUrls(tokenMap),
-        )
-    )
-  },
-)
-
-const allOfficialsAndUserAddedTokensSelector = createSelector(
-  [combinedTokenMapFromOfficialsUrlsSelector, userAddedTokenSelector],
-  (tokenMap, userAddedTokens) => {
-    return (
-      userAddedTokens
-        // reduce into all ALL_TOKENS filtered by the current chain
-        .reduce<{ [address: string]: Token }>(
-          (tokenMap_, token) => {
-            tokenMap_[token.address] = token
-            return tokenMap_
-          },
-          // must make a copy because reduce modifies the map, and we do not
-          // want to make a copy in every iteration
-          mapWithoutUrls(tokenMap),
-        )
-    )
-  },
-)
 
 /**
  * Returns all tokens that are from active urls and user added tokens
  */
 export function useAllTokens(): { [address: string]: Token } {
-  return useSelector(allTokenSelector)
+  const { chainId } = useActiveWeb3React()
+  const tokenMap = useAtomValue(combinedTokenMapFromActiveUrlsAtom)
+  const userAddedTokens = useSelector(userAddedTokenSelector(chainId))
+  return useMemo(() => {
+    return (
+      userAddedTokens
+        // reduce into all ALL_TOKENS filtered by the current chain
+        .reduce<{ [address: string]: Token }>(
+          (tokenMap_, token) => {
+            tokenMap_[token.address] = token
+            return tokenMap_
+          },
+          // must make a copy because reduce modifies the map, and we do not
+          // want to make a copy in every iteration
+          mapWithoutUrls(tokenMap, chainId),
+        )
+    )
+  }, [userAddedTokens, tokenMap, chainId])
 }
 
 /**
  * Returns all tokens that are from officials token list and user added tokens
  */
 export function useOfficialsAndUserAddedTokens(): { [address: string]: Token } {
-  return useSelector(allOfficialsAndUserAddedTokensSelector)
+  const { chainId } = useActiveWeb3React()
+  const tokenMap = useAtomValue(combinedTokenMapFromOfficialsUrlsAtom)
+  const userAddedTokens = useSelector(userAddedTokenSelector(chainId))
+  return useMemo(() => {
+    return (
+      userAddedTokens
+        // reduce into all ALL_TOKENS filtered by the current chain
+        .reduce<{ [address: string]: Token }>(
+          (tokenMap_, token) => {
+            tokenMap_[token.address] = token
+            return tokenMap_
+          },
+          // must make a copy because reduce modifies the map, and we do not
+          // want to make a copy in every iteration
+          mapWithoutUrls(tokenMap, chainId),
+        )
+    )
+  }, [userAddedTokens, tokenMap, chainId])
 }
 
 export function useUnsupportedTokens(): { [address: string]: Token } {
+  const { chainId } = useActiveWeb3React()
   const unsupportedTokensMap = useUnsupportedTokenList()
-  return useMemo(() => mapWithoutUrls(unsupportedTokensMap), [unsupportedTokensMap])
+  return useMemo(() => mapWithoutUrls(unsupportedTokensMap, chainId), [unsupportedTokensMap, chainId])
 }
 
 export function useWarningTokens(): { [address: string]: Token } {
   const warningTokensMap = useWarningTokenList()
-  return useMemo(() => mapWithoutUrls(warningTokensMap), [warningTokensMap])
+  const { chainId } = useActiveWeb3React()
+  return useMemo(() => mapWithoutUrls(warningTokensMap, chainId), [warningTokensMap, chainId])
 }
 
 export function useIsTokenActive(token: Token | undefined | null): boolean {
@@ -106,7 +104,7 @@ export function useIsUserAddedToken(currency: Currency | undefined | null): bool
     return false
   }
 
-  return !!userAddedTokens.find((token) => currencyEquals(currency, token))
+  return !!userAddedTokens.find((token) => currency?.equals(token))
 }
 
 // parse a name or symbol from a token response
@@ -175,7 +173,9 @@ export function useToken(tokenAddress?: string): Token | undefined | null {
 }
 
 export function useCurrency(currencyId: string | undefined): Currency | Token | null | undefined {
-  const isBNB = currencyId?.toUpperCase() === 'BNB' || currencyId?.toLowerCase() === GELATO_NATIVE
-  const token = useToken(isBNB ? undefined : currencyId)
-  return isBNB ? ETHER : token
+  const native = useNativeCurrency()
+  const isNative =
+    currencyId?.toUpperCase() === native.symbol?.toUpperCase() || currencyId?.toLowerCase() === GELATO_NATIVE
+  const token = useToken(isNative ? undefined : currencyId)
+  return isNative ? native : token
 }

@@ -1,8 +1,8 @@
 import { Flex, Heading, Skeleton, Text } from '@pancakeswap/uikit'
 import Balance from 'components/Balance'
 import cakeAbi from 'config/abi/cake.json'
-import tokens from 'config/constants/tokens'
-import { useTranslation } from 'contexts/Localization'
+import { bscTokens } from '@pancakeswap/tokens'
+import { useTranslation } from '@pancakeswap/localization'
 import useIntersectionObserver from 'hooks/useIntersectionObserver'
 import { useEffect, useState } from 'react'
 import { usePriceCakeBusd } from 'state/farms/hooks'
@@ -62,7 +62,7 @@ const Grid = styled.div`
   }
 `
 
-const emissionsPerBlock = 14.25
+const emissionsPerBlock = 1.375
 
 /**
  * User (Planet Finance) built a contract on top of our original manual CAKE pool,
@@ -72,7 +72,7 @@ const emissionsPerBlock = 14.25
  * https://twitter.com/PancakeSwap/status/1523913527626702849
  * https://bscscan.com/tx/0xd5ffea4d9925d2f79249a4ce05efd4459ed179152ea5072a2df73cd4b9e88ba7
  */
-const planetFinanceBurnedTokensWei = BigNumber.from('637407922445268000000000')
+const planetFinanceBurnedTokensWei = BigNumber.from('1')
 const cakeVault = getCakeVaultV2Contract()
 
 const CakeDataRow = () => {
@@ -88,15 +88,19 @@ const CakeDataRow = () => {
   } = useSWR(
     loadData ? ['cakeDataRow'] : null,
     async () => {
-      const totalSupplyCall = { address: tokens.cake.address, name: 'totalSupply' }
+      const totalSupplyCall = { address: bscTokens.cake.address, name: 'totalSupply' }
       const burnedTokenCall = {
-        address: tokens.cake.address,
+        address: bscTokens.cake.address,
         name: 'balanceOf',
-        params: ['0x000000000000000000000000000000000000dEaD'],
+        params: ['0x000000000000000000000000000000000000dead'],
       }
       const [tokenDataResultRaw, totalLockedAmount] = await Promise.all([
-        multicallv2(cakeAbi, [totalSupplyCall, burnedTokenCall], {
-          requireSuccess: false,
+        multicallv2({
+          abi: cakeAbi,
+          calls: [totalSupplyCall, burnedTokenCall],
+          options: {
+            requireSuccess: false,
+          },
         }),
         cakeVault.totalLockedAmount(),
       ])
@@ -149,7 +153,7 @@ const CakeDataRow = () => {
       <StyledColumn noMobileBorder style={{ gridArea: 'c' }}>
         <Text color="textSubtle">{t('Max Supply')}</Text>
 
-        <Balance decimals={0} lineHeight="1.1" fontSize="24px" bold value={750000000} />
+        <Balance decimals={0} lineHeight="1.1" fontSize="24px" bold value={100000000} />
       </StyledColumn>
       <StyledColumn noDesktopBorder style={{ gridArea: 'd' }}>
         <Text color="textSubtle">{t('Market cap')}</Text>

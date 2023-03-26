@@ -1,9 +1,9 @@
 import { createAction } from '@reduxjs/toolkit'
-import { SerializedToken } from 'config/constants/types'
+import { SerializedWrappedToken } from '@pancakeswap/tokens'
 
 export interface SerializedPair {
-  token0: SerializedToken
-  token1: SerializedToken
+  token0: SerializedWrappedToken
+  token1: SerializedWrappedToken
 }
 
 export enum FarmStakedOnly {
@@ -28,7 +28,7 @@ export const updateUserSlippageTolerance = createAction<{ userSlippageTolerance:
   'user/updateUserSlippageTolerance',
 )
 export const updateUserDeadline = createAction<{ userDeadline: number }>('user/updateUserDeadline')
-export const addSerializedToken = createAction<{ serializedToken: SerializedToken }>('user/addSerializedToken')
+export const addSerializedToken = createAction<{ serializedToken: SerializedWrappedToken }>('user/addSerializedToken')
 export const removeSerializedToken = createAction<{ chainId: number; address: string }>('user/removeSerializedToken')
 export const addSerializedPair = createAction<{ serializedPair: SerializedPair }>('user/addSerializedPair')
 export const removeSerializedPair =
@@ -70,4 +70,5 @@ export const hidePhishingWarningBanner = createAction<void>('user/hidePhishingWa
 
 export const setIsExchangeChartDisplayed = createAction<boolean>('user/toggleIsExchangeChartDisplayed')
 export const setChartViewMode = createAction<ChartViewMode>('user/setChartViewMode')
+export const setZapDisabled = createAction<boolean>('user/setZapDisabled')
 export const setSubgraphHealthIndicatorDisplayed = createAction<boolean>('user/setSubgraphHealthIndicatorDisplayed')

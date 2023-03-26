@@ -1,12 +1,12 @@
-import * as Sentry from '@sentry/react'
+import { setUser } from '@sentry/nextjs'
 import { useEffect } from 'react'
-import useActiveWeb3React from './useActiveWeb3React'
+import { useWeb3React } from '@pancakeswap/wagmi'
 
 function useSentryUser() {
-  const { account } = useActiveWeb3React()
+  const { account } = useWeb3React()
   useEffect(() => {
     if (account) {
-      Sentry.setUser({ account })
+      setUser({ account })
     }
   }, [account])
 }

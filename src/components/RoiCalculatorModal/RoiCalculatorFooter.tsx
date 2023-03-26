@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import styled from 'styled-components'
 import { Flex, Box, Text, ExpandableLabel, LinkExternal, Grid, HelpIcon, useTooltip } from '@pancakeswap/uikit'
-import { useTranslation } from 'contexts/Localization'
+import { useTranslation } from '@pancakeswap/localization'
 import { getApy } from 'utils/compoundApyHelpers'
 
 const Footer = styled(Flex)`
@@ -39,7 +39,7 @@ interface RoiCalculatorFooterProps {
   performanceFee: number
 }
 
-const RoiCalculatorFooter: React.FC<RoiCalculatorFooterProps> = ({
+const RoiCalculatorFooter: React.FC<React.PropsWithChildren<RoiCalculatorFooterProps>> = ({
   isFarm,
   apr,
   apy,
@@ -60,11 +60,11 @@ const RoiCalculatorFooter: React.FC<RoiCalculatorFooterProps> = ({
     <>
       <Text>
         {t(
-          'The Multiplier represents the proportion of CAKE rewards each farm receives, as a proportion of the CAKE produced each block.',
+          'The Multiplier represents the proportion of SHDW rewards each farm receives, as a proportion of the SHDW produced each block.',
         )}
       </Text>
       <Text my="24px">
-        {t('For example, if a 1x farm received 1 CAKE per block, a 40x farm would receive 40 CAKE per block.')}
+        {t('For example, if a 1x farm received 1 SHDW per block, a 40x farm would receive 40 SHDW per block.')}
       </Text>
       <Text>{t('This amount is already included in all APR calculations for the farm.')}</Text>
     </>,
@@ -72,6 +72,15 @@ const RoiCalculatorFooter: React.FC<RoiCalculatorFooterProps> = ({
   )
 
   const gridRowCount = isFarm ? 4 : 2
+  const lpRewardsAPR = useMemo(
+    () =>
+      isFarm
+        ? Number.isFinite(Number(displayApr)) && Number.isFinite(apr)
+          ? Math.max(Number(displayApr) - apr, 0).toFixed(2)
+          : null
+        : null,
+    [isFarm, displayApr, apr],
+  )
 
   return (
     <Footer p="16px" flexDirection="column">
@@ -93,7 +102,7 @@ const RoiCalculatorFooter: React.FC<RoiCalculatorFooterProps> = ({
             )}
             {!Number.isFinite(apy) ? (
               <Text color="textSubtle" small>
-                {isFarm ? t('Base APR (CAKE yield only)') : t('APR')}
+                *{isFarm ? t('Base APR (SHDW yield only)') : t('APR')}
               </Text>
             ) : (
               <Text color="textSubtle" small>
@@ -103,6 +112,16 @@ const RoiCalculatorFooter: React.FC<RoiCalculatorFooterProps> = ({
             <Text small textAlign="right">
               {(apy ?? apr).toFixed(2)}%
             </Text>
+            {isFarm && (
+              <>
+                <Text color="textSubtle" small>
+                  *{t('LP Rewards APR')}
+                </Text>
+                <Text small textAlign="right">
+                  {lpRewardsAPR === '0' ? '-' : lpRewardsAPR}%
+                </Text>
+              </>
+            )}
             {!Number.isFinite(apy) && (
               <Text color="textSubtle" small>
                 {t('APY (%compoundTimes%x daily compound)', {

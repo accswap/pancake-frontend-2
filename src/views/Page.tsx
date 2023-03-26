@@ -12,12 +12,24 @@ const StyledPage = styled.div<{ $removePadding: boolean; $noMinHeight }>`
   padding: ${({ $removePadding }) => ($removePadding ? '0' : '16px')};
   padding-bottom: 0;
   min-height: ${({ $noMinHeight }) => ($noMinHeight ? 'initial' : 'calc(100vh - 64px)')};
-  background: ${({ theme }) => theme.colors.gradients.bubblegum};
 
-  ${({ theme }) => theme.mediaQueries.xs} {
-    background-size: auto;
+  background: ${({ theme }) => theme.colors.backgroundImageDesktop} no-repeat center center;
+  object-fit: contain;
+  @media (min-width: 768px) {
+    background: ${({ theme }) => theme.colors.backgroundImage} no-repeat center center;
   }
 
+  
+  ${({ theme }) => theme.mediaQueries.xs} {
+      background-size: cover;
+      background-position: center;
+      background-width: 100%;
+      background-height: 100vh;
+      object-fit: cover;
+  }
+  
+
+  
   ${({ theme }) => theme.mediaQueries.sm} {
     padding: ${({ $removePadding }) => ($removePadding ? '0' : '24px')};
     padding-bottom: 0;
@@ -31,12 +43,14 @@ const StyledPage = styled.div<{ $removePadding: boolean; $noMinHeight }>`
 `
 
 const Page: React.FC<
-  React.HTMLAttributes<HTMLDivElement> & {
-    removePadding?: boolean
-    hideFooterOnDesktop?: boolean
-    noMinHeight?: boolean
-    helpUrl?: string
-  }
+  React.PropsWithChildren<
+    React.HTMLAttributes<HTMLDivElement> & {
+      removePadding?: boolean
+      hideFooterOnDesktop?: boolean
+      noMinHeight?: boolean
+      helpUrl?: string
+    }
+  >
 > = ({
   children,
   removePadding = false,

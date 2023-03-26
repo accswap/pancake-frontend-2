@@ -11,10 +11,13 @@ import {
   IconButton,
   Skeleton,
   AutoRenewIcon,
+  Message,
+  MessageText,
+  ErrorIcon,
 } from '@pancakeswap/uikit'
 import { ModalActions, ModalInput } from 'components/Modal'
 import RoiCalculatorModal from 'components/RoiCalculatorModal'
-import { useTranslation } from 'contexts/Localization'
+import { useTranslation } from '@pancakeswap/localization'
 import { getFullDisplayBalance, formatNumber } from 'utils/formatBalance'
 import { getInterestBreakdown } from 'utils/compoundApyHelpers'
 
@@ -43,9 +46,10 @@ interface DepositModalProps {
   displayApr?: string
   addLiquidityUrl?: string
   cakePrice?: BigNumber
+  showActiveBooster?: boolean
 }
 
-const DepositModal: React.FC<DepositModalProps> = ({
+const DepositModal: React.FC<React.PropsWithChildren<DepositModalProps>> = ({
   max,
   stakedBalance,
   onConfirm,
@@ -58,6 +62,7 @@ const DepositModal: React.FC<DepositModalProps> = ({
   apr,
   addLiquidityUrl,
   cakePrice,
+  showActiveBooster,
 }) => {
   const [val, setVal] = useState('')
   const [pendingTx, setPendingTx] = useState(false)
@@ -125,6 +130,13 @@ const DepositModal: React.FC<DepositModalProps> = ({
         addLiquidityUrl={addLiquidityUrl}
         inputTitle={t('Stake')}
       />
+      {showActiveBooster ? (
+        <Message variant="warning" icon={<ErrorIcon width="24px" color="warning" />} mt="32px">
+          <MessageText>
+            {t('The yield booster multiplier will be updated based on the latest staking conditions.')}
+          </MessageText>
+        </Message>
+      ) : null}
       <Flex mt="24px" alignItems="center" justifyContent="space-between">
         <Text mr="8px" color="textSubtle">
           {t('Annual ROI at current rates')}:

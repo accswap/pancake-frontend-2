@@ -1,6 +1,6 @@
 import { Flex, Button, Text } from '@pancakeswap/uikit'
 import QuestionHelper from 'components/QuestionHelper'
-import { useTranslation } from 'contexts/Localization'
+import { useTranslation } from '@pancakeswap/localization'
 import { useGasPriceManager } from 'state/user/hooks'
 import { GAS_PRICE_GWEI, GAS_PRICE } from 'state/types'
 
@@ -21,6 +21,17 @@ const GasSettings = () => {
         />
       </Flex>
       <Flex flexWrap="wrap">
+        <Button
+          mt="4px"
+          mr="4px"
+          scale="sm"
+          onClick={() => {
+            setGasPrice(GAS_PRICE_GWEI.default)
+          }}
+          variant={gasPrice === GAS_PRICE_GWEI.default ? 'primary' : 'tertiary'}
+        >
+          {t('RPC Default')}
+        </Button>
         <Button
           mt="4px"
           mr="4px"

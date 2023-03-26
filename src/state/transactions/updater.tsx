@@ -1,11 +1,11 @@
 import { useEffect, useMemo } from 'react'
-import { useDispatch, useSelector } from 'react-redux'
-import { useTranslation } from 'contexts/Localization'
+import { useSelector } from 'react-redux'
+import { useTranslation } from '@pancakeswap/localization'
 import useActiveWeb3React from 'hooks/useActiveWeb3React'
 import { useCurrentBlock } from 'state/block/hooks'
 import { ToastDescriptionWithTx } from 'components/Toast'
-import useToast from 'hooks/useToast'
-import { AppDispatch, AppState } from '../index'
+import { useToast } from '@pancakeswap/uikit'
+import { AppState, useAppDispatch } from '../index'
 import { checkedTransaction, finalizeTransaction } from './actions'
 
 export function shouldCheck(
@@ -30,12 +30,12 @@ export function shouldCheck(
 }
 
 export default function Updater(): null {
-  const { library, chainId } = useActiveWeb3React()
+  const { chainId, provider } = useActiveWeb3React()
   const { t } = useTranslation()
 
   const currentBlock = useCurrentBlock()
 
-  const dispatch = useDispatch<AppDispatch>()
+  const dispatch = useAppDispatch()
   const state = useSelector<AppState, AppState['transactions']>((s) => s.transactions)
 
   const transactions = useMemo(() => (chainId ? state[chainId] ?? {} : {}), [chainId, state])
@@ -43,12 +43,12 @@ export default function Updater(): null {
   const { toastError, toastSuccess } = useToast()
 
   useEffect(() => {
-    if (!chainId || !library || !currentBlock) return
+    if (!chainId || !provider || !currentBlock) return
 
     Object.keys(transactions)
       .filter((hash) => shouldCheck(currentBlock, transactions[hash]))
       .forEach((hash) => {
-        library
+        provider
           .getTransactionReceipt(hash)
           .then((receipt) => {
             if (receipt) {
@@ -79,7 +79,7 @@ export default function Updater(): null {
             console.error(`failed to check transaction hash: ${hash}`, error)
           })
       })
-  }, [chainId, library, transactions, currentBlock, dispatch, toastSuccess, toastError, t])
+  }, [chainId, provider, transactions, currentBlock, dispatch, toastSuccess, toastError, t])
 
   return null
 }

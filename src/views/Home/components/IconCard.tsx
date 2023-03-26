@@ -1,6 +1,6 @@
 import { ReactNode } from 'react'
 import styled from 'styled-components'
-import { Card, CardBody, Box, CardProps } from '@pancakeswap/uikit'
+import { Box, Card, CardBody, CardProps } from '@pancakeswap/uikit'
 
 const StyledCard = styled(Card)<{ background: string; rotation?: string }>`
   height: fit-content;
@@ -33,7 +33,14 @@ export interface IconCardData {
   rotation?: string
 }
 
-const IconCard: React.FC<IconCardProps> = ({ icon, background, borderColor, rotation, children, ...props }) => {
+const IconCard: React.FC<React.PropsWithChildren<IconCardProps>> = ({
+  icon,
+  background,
+  borderColor,
+  rotation,
+  children,
+  ...props
+}) => {
   return (
     <StyledCard background={background} borderBackground={borderColor} rotation={rotation} {...props}>
       <CardBody>

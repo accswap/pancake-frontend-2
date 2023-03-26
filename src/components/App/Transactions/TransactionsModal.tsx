@@ -1,12 +1,11 @@
 import { useCallback } from 'react'
 import useActiveWeb3React from 'hooks/useActiveWeb3React'
-import { useDispatch } from 'react-redux'
 import { Modal, ModalBody, Text, Button, Flex, InjectedModalProps } from '@pancakeswap/uikit'
-import { useTranslation } from 'contexts/Localization'
+import { useTranslation } from '@pancakeswap/localization'
 import orderBy from 'lodash/orderBy'
 import { isTransactionRecent, useAllTransactions } from 'state/transactions/hooks'
 import { TransactionDetails } from 'state/transactions/reducer'
-import { AppDispatch } from 'state'
+import { useAppDispatch } from 'state'
 import { clearAllTransactions } from 'state/transactions/actions'
 import { AutoRow } from '../../Layout/Row'
 import Transaction from './Transaction'
@@ -22,9 +21,9 @@ function renderTransactions(transactions: TransactionDetails[]) {
   )
 }
 
-const TransactionsModal: React.FC<InjectedModalProps> = ({ onDismiss }) => {
+const TransactionsModal: React.FC<React.PropsWithChildren<InjectedModalProps>> = ({ onDismiss }) => {
   const { account, chainId } = useActiveWeb3React()
-  const dispatch = useDispatch<AppDispatch>()
+  const dispatch = useAppDispatch()
   const allTransactions = useAllTransactions()
 
   const { t } = useTranslation()
@@ -43,7 +42,7 @@ const TransactionsModal: React.FC<InjectedModalProps> = ({ onDismiss }) => {
   }, [dispatch, chainId])
 
   return (
-    <Modal title={t('Recent Transactions')} headerBackground="gradients.cardHeader" onDismiss={onDismiss}>
+    <Modal title={t('Recent Transactions')} headerBackground="gradientCardHeader" onDismiss={onDismiss}>
       {account ? (
         <ModalBody>
           {!!pending.length || !!confirmed.length ? (

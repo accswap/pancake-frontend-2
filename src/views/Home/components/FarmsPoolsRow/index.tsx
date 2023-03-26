@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import styled from 'styled-components'
 import { Flex, Box, SwapVertIcon, IconButton } from '@pancakeswap/uikit'
-import { useTranslation } from 'contexts/Localization'
+import { useTranslation } from '@pancakeswap/localization'
 import { DeserializedPool } from 'state/types'
 import useIntersectionObserver from 'hooks/useIntersectionObserver'
 import useGetTopFarmsByApr from 'views/Home/hooks/useGetTopFarmsByApr'
@@ -29,8 +29,8 @@ const FarmsPoolsRow = () => {
   const [showFarms, setShowFarms] = useState(false)
   const { t } = useTranslation()
   const { observerRef, isIntersecting } = useIntersectionObserver()
-  const { topFarms } = useGetTopFarmsByApr(isIntersecting)
-  const { topPools } = useGetTopPoolsByApr(isIntersecting)
+  const { topFarms, fetched } = useGetTopFarmsByApr(isIntersecting)
+  const { topPools } = useGetTopPoolsByApr(fetched && isIntersecting)
   const { lockedApy } = useVaultApy()
 
   const timer = useRef<ReturnType<typeof setTimeout>>(null)
@@ -67,7 +67,7 @@ const FarmsPoolsRow = () => {
     <div ref={observerRef}>
       <Flex flexDirection="column" mt="24px">
         <Flex mb="24px">
-          <RowHeading text={showFarms ? t('Top Farms') : t('Top Syrup Pools')} />
+          <RowHeading text={showFarms ? t('Top Farms') : t('Top Shadow Pools')} />
           <IconButton
             variant="text"
             height="100%"

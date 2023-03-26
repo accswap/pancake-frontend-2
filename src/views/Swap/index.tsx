@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import styled from 'styled-components'
-import { CurrencyAmount, JSBI, Token, Trade } from '@pancakeswap/sdk'
+import { ChainId, Currency, CurrencyAmount, Token, Trade, TradeType } from '@pancakeswap/sdk'
+import { computeTradePriceBreakdown, warningSeverity } from 'utils/exchange'
+import replaceBrowserHistory from '@pancakeswap/utils/replaceBrowserHistory'
 import {
   Button,
   Text,
@@ -12,17 +14,23 @@ import {
   BottomDrawer,
   ArrowUpDownIcon,
   Skeleton,
-  useMatchBreakpointsContext,
+  useMatchBreakpoints,
 } from '@pancakeswap/uikit'
 import { useIsTransactionUnsupported } from 'hooks/Trades'
 import UnsupportedCurrencyFooter from 'components/UnsupportedCurrencyFooter'
 import Footer from 'components/Menu/Footer'
+import { CommitButton } from 'components/CommitButton'
 import { useRouter } from 'next/router'
-import { useTranslation } from 'contexts/Localization'
+import useActiveWeb3React from 'hooks/useActiveWeb3React'
+import { useTranslation } from '@pancakeswap/localization'
 import { EXCHANGE_DOCS_URLS } from 'config/constants'
+import { BIG_INT_ZERO } from 'config/constants/exchange'
 import { maxAmountSpend } from 'utils/maxAmountSpend'
-import { computeTradePriceBreakdown, warningSeverity } from 'utils/prices'
 import shouldShowSwapWarning from 'utils/shouldShowSwapWarning'
+import { useSwapActionHandlers } from 'state/swap/useSwapActionHandlers'
+import SettingsModal, { withCustomOnDismiss } from 'components/Menu/GlobalSettings/SettingsModal'
+import { SettingsMode } from 'components/Menu/GlobalSettings/types'
+
 import useRefreshBlockNumberID from './hooks/useRefreshBlockNumber'
 import AddressInputPanel from './components/AddressInputPanel'
 import { GreyCard } from '../../components/Card'
@@ -38,7 +46,6 @@ import ProgressSteps from './components/ProgressSteps'
 import { AppBody } from '../../components/App'
 import ConnectWalletButton from '../../components/ConnectWalletButton'
 
-import useActiveWeb3React from '../../hooks/useActiveWeb3React'
 import { useCurrency, useAllTokens } from '../../hooks/Tokens'
 import { ApprovalState, useApproveCallbackFromTrade } from '../../hooks/useApproveCallback'
 import { useSwapCallback } from '../../hooks/useSwapCallback'
@@ -47,7 +54,6 @@ import { Field } from '../../state/swap/actions'
 import {
   useDefaultsFromURLSearch,
   useDerivedSwapInfo,
-  useSwapActionHandlers,
   useSwapState,
   useSingleTokenSwapInfo,
 } from '../../state/swap/hooks'
@@ -57,6 +63,7 @@ import {
   useUserSingleHopOnly,
   useExchangeChartManager,
 } from '../../state/user/hooks'
+
 import CircleLoader from '../../components/Loader/CircleLoader'
 import Page from '../Page'
 import SwapWarningModal from './components/SwapWarningModal'
@@ -64,6 +71,8 @@ import PriceChartContainer from './components/Chart/PriceChartContainer'
 import { StyledInputCurrencyWrapper, StyledSwapContainer } from './styles'
 import CurrencyInputHeader from './components/CurrencyInputHeader'
 import ImportTokenWarningModal from '../../components/ImportTokenWarningModal'
+import { CommonBasesType } from '../../components/SearchModal/types'
+import { currencyId } from '../../utils/currencyId'
 
 const Label = styled(Text)`
   font-size: 12px;
@@ -89,11 +98,16 @@ const SwitchIconButton = styled(IconButton)`
   }
 `
 
+const CHART_SUPPORT_CHAIN_IDS = [ChainId.BSC]
+export const ACCESS_TOKEN_SUPPORT_CHAIN_IDS = [ChainId.BSC]
+
+const SettingsModalWithCustomDismiss = withCustomOnDismiss(SettingsModal)
+
 export default function Swap() {
   const router = useRouter()
   const loadedUrlParams = useDefaultsFromURLSearch()
   const { t } = useTranslation()
-  const { isMobile } = useMatchBreakpointsContext()
+  const { isMobile } = useMatchBreakpoints()
   const [isChartExpanded, setIsChartExpanded] = useState(false)
   const [userChartPreference, setUserChartPreference] = useExchangeChartManager(isMobile)
   const [isChartDisplayed, setIsChartDisplayed] = useState(userChartPreference)
@@ -109,19 +123,19 @@ export default function Swap() {
     useCurrency(loadedUrlParams?.outputCurrencyId),
   ]
   const urlLoadedTokens: Token[] = useMemo(
-    () => [loadedInputCurrency, loadedOutputCurrency]?.filter((c): c is Token => c instanceof Token) ?? [],
+    () => [loadedInputCurrency, loadedOutputCurrency]?.filter((c): c is Token => c?.isToken) ?? [],
     [loadedInputCurrency, loadedOutputCurrency],
   )
+
+  const { account, chainId } = useActiveWeb3React()
 
   // dismiss warning if all imported tokens are in active lists
   const defaultTokens = useAllTokens()
   const importTokensNotInDefault =
     urlLoadedTokens &&
     urlLoadedTokens.filter((token: Token) => {
-      return !(token.address in defaultTokens)
+      return !(token.address in defaultTokens) && token.chainId === chainId
     })
-
-  const { account } = useActiveWeb3React()
 
   // for expert mode
   const [isExpertMode] = useExpertModeManager()
@@ -186,7 +200,7 @@ export default function Swap() {
 
   // modal and loading
   const [{ tradeToConfirm, swapErrorMessage, attemptingTxn, txHash }, setSwapState] = useState<{
-    tradeToConfirm: Trade | undefined
+    tradeToConfirm: Trade<Currency, Currency, TradeType> | undefined
     attemptingTxn: boolean
     swapErrorMessage: string | undefined
     txHash: string | undefined
@@ -206,12 +220,12 @@ export default function Swap() {
 
   const route = trade?.route
   const userHasSpecifiedInputOutput = Boolean(
-    currencies[Field.INPUT] && currencies[Field.OUTPUT] && parsedAmounts[independentField]?.greaterThan(JSBI.BigInt(0)),
+    currencies[Field.INPUT] && currencies[Field.OUTPUT] && parsedAmounts[independentField]?.greaterThan(BIG_INT_ZERO),
   )
   const noRoute = !route
 
   // check whether the user has approved the router on the input token
-  const [approval, approveCallback] = useApproveCallbackFromTrade(trade, allowedSlippage)
+  const [approval, approveCallback] = useApproveCallbackFromTrade(trade, allowedSlippage, chainId)
 
   // check if user has gone through approval process, used to show two step buttons, reset on token change
   const [approvalSubmitted, setApprovalSubmitted] = useState<boolean>(false)
@@ -223,7 +237,7 @@ export default function Swap() {
     }
   }, [approval, approvalSubmitted])
 
-  const maxAmountInput: CurrencyAmount | undefined = maxAmountSpend(currencyBalances[Field.INPUT])
+  const maxAmountInput: CurrencyAmount<Currency> | undefined = maxAmountSpend(currencyBalances[Field.INPUT])
   const atMaxAmountInput = Boolean(maxAmountInput && parsedAmounts[Field.INPUT]?.equalTo(maxAmountInput))
 
   // the callback to execute the swap
@@ -303,6 +317,8 @@ export default function Swap() {
       } else {
         setSwapWarningCurrency(null)
       }
+
+      replaceBrowserHistory('inputCurrency', currencyId(currencyInput))
     },
     [onCurrencySelection],
   )
@@ -322,6 +338,8 @@ export default function Swap() {
       } else {
         setSwapWarningCurrency(null)
       }
+
+      replaceBrowserHistory('outputCurrency', currencyId(currencyOutput))
     },
 
     [onCurrencySelection],
@@ -340,10 +358,20 @@ export default function Swap() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [importTokensNotInDefault.length])
 
+  const [indirectlyOpenConfirmModalState, setIndirectlyOpenConfirmModalState] = useState(false)
+
+  const [onPresentSettingsModal] = useModal(
+    <SettingsModalWithCustomDismiss
+      customOnDismiss={() => setIndirectlyOpenConfirmModalState(true)}
+      mode={SettingsMode.SWAP_LIQUIDITY}
+    />,
+  )
+
   const [onPresentConfirmModal] = useModal(
     <ConfirmSwapModal
       trade={trade}
       originalTrade={tradeToConfirm}
+      currencyBalances={currencyBalances}
       onAcceptChanges={handleAcceptChanges}
       attemptingTxn={attemptingTxn}
       txHash={txHash}
@@ -352,11 +380,23 @@ export default function Swap() {
       onConfirm={handleSwap}
       swapErrorMessage={swapErrorMessage}
       customOnDismiss={handleConfirmDismiss}
+      openSettingModal={onPresentSettingsModal}
     />,
     true,
     true,
     'confirmSwapModal',
   )
+
+  useEffect(() => {
+    if (indirectlyOpenConfirmModalState) {
+      setIndirectlyOpenConfirmModalState(false)
+      setSwapState((state) => ({
+        ...state,
+        swapErrorMessage: undefined,
+      }))
+      onPresentConfirmModal()
+    }
+  }, [indirectlyOpenConfirmModalState, onPresentConfirmModal])
 
   const hasAmount = Boolean(parsedAmount)
 
@@ -366,10 +406,18 @@ export default function Swap() {
     }
   }, [hasAmount, refreshBlockNumber])
 
+  const isChartSupported = useMemo(
+    () =>
+      // avoid layout shift, by default showing
+      !chainId || CHART_SUPPORT_CHAIN_IDS.includes(chainId),
+    [chainId],
+  )
+
+
   return (
     <Page removePadding={isChartExpanded} hideFooterOnDesktop={isChartExpanded}>
       <Flex width="100%" justifyContent="center" position="relative">
-        {!isMobile && (
+        {!isMobile && isChartSupported && (
           <PriceChartContainer
             inputCurrencyId={inputCurrencyId}
             inputCurrency={currencies[Field.INPUT]}
@@ -381,23 +429,25 @@ export default function Swap() {
             currentSwapPrice={singleTokenPrice}
           />
         )}
-        <BottomDrawer
-          content={
-            <PriceChartContainer
-              inputCurrencyId={inputCurrencyId}
-              inputCurrency={currencies[Field.INPUT]}
-              outputCurrencyId={outputCurrencyId}
-              outputCurrency={currencies[Field.OUTPUT]}
-              isChartExpanded={isChartExpanded}
-              setIsChartExpanded={setIsChartExpanded}
-              isChartDisplayed={isChartDisplayed}
-              currentSwapPrice={singleTokenPrice}
-              isMobile
-            />
-          }
-          isOpen={isChartDisplayed}
-          setIsOpen={setIsChartDisplayed}
-        />
+        {isChartSupported && (
+          <BottomDrawer
+            content={
+              <PriceChartContainer
+                inputCurrencyId={inputCurrencyId}
+                inputCurrency={currencies[Field.INPUT]}
+                outputCurrencyId={outputCurrencyId}
+                outputCurrency={currencies[Field.OUTPUT]}
+                isChartExpanded={isChartExpanded}
+                setIsChartExpanded={setIsChartExpanded}
+                isChartDisplayed={isChartDisplayed}
+                currentSwapPrice={singleTokenPrice}
+                isMobile
+              />
+            }
+            isOpen={isChartDisplayed}
+            setIsOpen={setIsChartDisplayed}
+          />
+        )}
         <Flex flexDirection="column">
           <StyledSwapContainer $isChartExpanded={isChartExpanded}>
             <StyledInputCurrencyWrapper mt={isChartExpanded ? '24px' : '0'}>
@@ -424,6 +474,8 @@ export default function Swap() {
                       onCurrencySelect={handleInputSelect}
                       otherCurrency={currencies[Field.OUTPUT]}
                       id="swap-currency-input"
+                      showCommonBases
+                      commonBasesType={CommonBasesType.SWAP_LIMITORDER}
                     />
 
                     <AutoColumn justify="space-between">
@@ -434,6 +486,8 @@ export default function Swap() {
                           onClick={() => {
                             setApprovalSubmitted(false) // reset 2 step UI for approvals
                             onSwitchTokens()
+                            replaceBrowserHistory('inputCurrency', outputCurrencyId)
+                            replaceBrowserHistory('outputCurrency', inputCurrencyId)
                           }}
                         >
                           <ArrowDownIcon
@@ -461,7 +515,11 @@ export default function Swap() {
                       onCurrencySelect={handleOutputSelect}
                       otherCurrency={currencies[Field.INPUT]}
                       id="swap-currency-output"
+                      showCommonBases
+                      commonBasesType={CommonBasesType.SWAP_LIMITORDER}
                     />
+
+                   
 
                     {isExpertMode && recipient !== null && !showWrap ? (
                       <>
@@ -512,10 +570,10 @@ export default function Swap() {
                     ) : !account ? (
                       <ConnectWalletButton width="100%" />
                     ) : showWrap ? (
-                      <Button width="100%" disabled={Boolean(wrapInputError)} onClick={onWrap}>
+                      <CommitButton width="100%" disabled={Boolean(wrapInputError)} onClick={onWrap}>
                         {wrapInputError ??
                           (wrapType === WrapType.WRAP ? 'Wrap' : wrapType === WrapType.UNWRAP ? 'Unwrap' : null)}
-                      </Button>
+                      </CommitButton>
                     ) : noRoute && userHasSpecifiedInputOutput ? (
                       <GreyCard style={{ textAlign: 'center', padding: '0.75rem' }}>
                         <Text color="textSubtle">{t('Insufficient liquidity for this trade.')}</Text>
@@ -523,7 +581,7 @@ export default function Swap() {
                       </GreyCard>
                     ) : showApproveFlow ? (
                       <RowBetween>
-                        <Button
+                        <CommitButton
                           variant={approval === ApprovalState.APPROVED ? 'success' : 'primary'}
                           onClick={approveCallback}
                           disabled={approval !== ApprovalState.NOT_APPROVED || approvalSubmitted}
@@ -538,8 +596,8 @@ export default function Swap() {
                           ) : (
                             t('Enable %asset%', { asset: currencies[Field.INPUT]?.symbol ?? '' })
                           )}
-                        </Button>
-                        <Button
+                        </CommitButton>
+                        <CommitButton
                           variant={isValid && priceImpactSeverity > 2 ? 'danger' : 'primary'}
                           onClick={() => {
                             if (isExpertMode) {
@@ -567,10 +625,10 @@ export default function Swap() {
                             : priceImpactSeverity > 2
                             ? t('Swap Anyway')
                             : t('Swap')}
-                        </Button>
+                        </CommitButton>
                       </RowBetween>
                     ) : (
-                      <Button
+                      <CommitButton
                         variant={isValid && priceImpactSeverity > 2 && !swapCallbackError ? 'danger' : 'primary'}
                         onClick={() => {
                           if (isExpertMode) {
@@ -595,7 +653,7 @@ export default function Swap() {
                             : priceImpactSeverity > 2
                             ? t('Swap Anyway')
                             : t('Swap'))}
-                      </Button>
+                      </CommitButton>
                     )}
                     {showApproveFlow && (
                       <Column style={{ marginTop: '1rem' }}>

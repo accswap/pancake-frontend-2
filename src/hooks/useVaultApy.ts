@@ -55,7 +55,7 @@ export function useVaultApy({ duration = MAX_LOCK_DURATION }: { duration?: numbe
     const calls = [
       {
         address: masterChefAddress,
-        name: 'cakePerBlock',
+        name: 'shdwPerBlock',
         params: [false],
       },
       {
@@ -69,7 +69,10 @@ export function useVaultApy({ duration = MAX_LOCK_DURATION }: { duration?: numbe
       },
     ]
 
-    const [[specialFarmsPerBlock], cakePoolInfo, [totalSpecialAllocPoint]] = await multicallv2(masterChefAbi, calls)
+    const [[specialFarmsPerBlock], cakePoolInfo, [totalSpecialAllocPoint]] = await multicallv2({
+      abi: masterChefAbi,
+      calls,
+    })
 
     const cakePoolSharesInSpecialFarms = FixedNumber.from(cakePoolInfo.allocPoint).divUnsafe(
       FixedNumber.from(totalSpecialAllocPoint),
