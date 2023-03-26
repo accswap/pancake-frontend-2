@@ -1,76 +1,98 @@
-import styled, { DefaultTheme, keyframes, css } from "styled-components";
+import _tagged_template_literal from "@swc/helpers/src/_tagged_template_literal.mjs";
+function _templateObject() {
+    var data = _tagged_template_literal([
+        "\n  0% {\n    background-position: 50% 0%;\n  }\n  50% {\n    background-position: 50% 100%;\n  }\n  100% {\n    background-position: 50% 0%;\n  }\n"
+    ]);
+    _templateObject = function _templateObject() {
+        return data;
+    };
+    return data;
+}
+function _templateObject1() {
+    var data = _tagged_template_literal([
+        "\n      animation: ",
+        " 3s ease infinite;\n      background-size: 400% 400%;\n    "
+    ]);
+    _templateObject1 = function _templateObject1() {
+        return data;
+    };
+    return data;
+}
+function _templateObject2() {
+    var data = _tagged_template_literal([
+        "\n  background: ",
+        ";\n  border-radius: ",
+        ";\n  color: ",
+        ";\n  overflow: hidden;\n  position: relative;\n\n  ",
+        "\n\n  padding: 1px 1px 3px 1px;\n\n  ",
+        "\n"
+    ]);
+    _templateObject2 = function _templateObject2() {
+        return data;
+    };
+    return data;
+}
+function _templateObject3() {
+    var data = _tagged_template_literal([
+        "\n  width: 100%;\n  height: 100%;\n  overflow: ",
+        ";\n  background: ",
+        ";\n  border-radius: ",
+        ";\n"
+    ]);
+    _templateObject3 = function _templateObject3() {
+        return data;
+    };
+    return data;
+}
+import styled, { keyframes, css } from "styled-components";
 import { space } from "styled-system";
 import { Box } from "../Box";
-import { CardProps } from "./types";
-
-const PromotedGradient = keyframes`
-  0% {
-    background-position: 50% 0%;
-  }
-  50% {
-    background-position: 50% 100%;
-  }
-  100% {
-    background-position: 50% 0%;
-  }
-`;
-
-interface StyledCardProps extends CardProps {
-  theme: DefaultTheme;
-}
-
+var PromotedGradient = keyframes(_templateObject());
 /**
  * Priority: Warning --> Success --> Active
- */
-const getBorderColor = ({ isActive, isSuccess, isWarning, borderBackground, theme }: StyledCardProps) => {
-  if (borderBackground) {
-    return borderBackground;
-  }
-  if (isWarning) {
-    return theme.colors.warning;
-  }
-
-  if (isSuccess) {
-    return theme.colors.success;
-  }
-
-  if (isActive) {
-    return `linear-gradient(180deg, ${theme.colors.primaryBright}, ${theme.colors.secondary})`;
-  }
-
-  return theme.colors.cardBorder;
+ */ var getBorderColor = function(param) {
+    var isActive = param.isActive, isSuccess = param.isSuccess, isWarning = param.isWarning, borderBackground = param.borderBackground, theme = param.theme;
+    if (borderBackground) {
+        return borderBackground;
+    }
+    if (isWarning) {
+        return theme.colors.warning;
+    }
+    if (isSuccess) {
+        return theme.colors.success;
+    }
+    if (isActive) {
+        return "linear-gradient(180deg, ".concat(theme.colors.primaryBright, ", ").concat(theme.colors.secondary, ")");
+    }
+    return theme.colors.cardBorder;
 };
-
-export const StyledCard = styled.div<StyledCardProps>`
-  background: ${getBorderColor};
-  border-radius: ${({ theme }) => theme.radii.card};
-  color: ${({ theme, isDisabled }) => theme.colors[isDisabled ? "textDisabled" : "text"]};
-  overflow: hidden;
-  position: relative;
-
-  ${({ isActive }) =>
-    isActive &&
-    css`
-      animation: ${PromotedGradient} 3s ease infinite;
-      background-size: 400% 400%;
-    `}
-
-  padding: 1px 1px 3px 1px;
-
-  ${space}
-`;
-
-export const StyledCardInner = styled(Box)<{ background?: string; hasCustomBorder: boolean }>`
-  width: 100%;
-  height: 100%;
-  overflow: ${({ hasCustomBorder }) => (hasCustomBorder ? "initial" : "inherit")};
-  background: ${({ theme, background }) => background ?? theme.card.background};
-  border-radius: ${({ theme }) => theme.radii.card};
-`;
-
+export var StyledCard = styled.div.withConfig({
+    componentId: "sc-eecfaa46-0"
+})(_templateObject2(), getBorderColor, function(param) {
+    var theme = param.theme;
+    return theme.radii.card;
+}, function(param) {
+    var theme = param.theme, isDisabled = param.isDisabled;
+    return theme.colors[isDisabled ? "textDisabled" : "text"];
+}, function(param) {
+    var isActive = param.isActive;
+    return isActive && css(_templateObject1(), PromotedGradient);
+}, space);
+export var StyledCardInner = styled(Box).withConfig({
+    componentId: "sc-eecfaa46-1"
+})(_templateObject3(), function(param) {
+    var hasCustomBorder = param.hasCustomBorder;
+    return hasCustomBorder ? "initial" : "inherit";
+}, function(param) {
+    var theme = param.theme, background = param.background;
+    return background !== null && background !== void 0 ? background : theme.card.background;
+}, function(param) {
+    var theme = param.theme;
+    return theme.radii.card;
+});
 StyledCard.defaultProps = {
-  isActive: false,
-  isSuccess: false,
-  isWarning: false,
-  isDisabled: false,
+    isActive: false,
+    isSuccess: false,
+    isWarning: false,
+    isDisabled: false
 };

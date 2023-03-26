@@ -2,7 +2,6 @@ interface Window {
   ethereum?: {
     isMetaMask?: true;
     isOpera?: true;
-    isCoinbaseWallet?: true;
     isTrust?: true;
     providers?: any[];
     request?: (...args: any[]) => Promise<void>;

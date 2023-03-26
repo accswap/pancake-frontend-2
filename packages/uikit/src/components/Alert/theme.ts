@@ -1,10 +1,7 @@
 import { darkColors, lightColors } from "../../theme/colors";
-import { AlertTheme } from "./types";
-
-export const light: AlertTheme = {
-  background: lightColors.backgroundAlt,
+export var light = {
+    background: lightColors.backgroundAlt
 };
-
-export const dark: AlertTheme = {
-  background: darkColors.backgroundAlt,
+export var dark = {
+    background: darkColors.backgroundAlt
 };

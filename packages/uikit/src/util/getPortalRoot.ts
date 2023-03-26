@@ -1,4 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-const getPortalRoot = () => typeof window !== "undefined" && (document.getElementById("portal-root") ?? document.body);
-
+var ref;
+var getPortalRoot = function() {
+    return "object" !== "undefined" && ((ref = document.getElementById("portal-root")) !== null && ref !== void 0 ? ref : document.body);
+};
 export default getPortalRoot;

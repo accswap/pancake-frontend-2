@@ -1,3 +1,67 @@
+import _tagged_template_literal from "@swc/helpers/src/_tagged_template_literal.mjs";
+function _templateObject() {
+    var data = _tagged_template_literal([
+        "\n  position: relative;\n  width: 100%;\n"
+    ]);
+    _templateObject = function _templateObject() {
+        return data;
+    };
+    return data;
+}
+function _templateObject1() {
+    var data = _tagged_template_literal([
+        "\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  width: 100%;\n  height: ",
+        "px;\n  background-color: ",
+        ";\n  border-bottom: 1px solid ",
+        ";\n  transform: translate3d(0, 0, 0);\n\n  padding-left: 16px;\n  padding-right: 16px;\n"
+    ]);
+    _templateObject1 = function _templateObject1() {
+        return data;
+    };
+    return data;
+}
+function _templateObject2() {
+    var data = _tagged_template_literal([
+        "\n  position: fixed;\n  top: ",
+        ";\n  left: 0;\n  transition: top 0.2s;\n  height: ",
+        ";\n  width: 100%;\n  z-index: 20;\n"
+    ]);
+    _templateObject2 = function _templateObject2() {
+        return data;
+    };
+    return data;
+}
+function _templateObject3() {
+    var data = _tagged_template_literal([
+        "\n  height: ",
+        ";\n  min-height: ",
+        ";\n  max-height: ",
+        ";\n  width: 100%;\n"
+    ]);
+    _templateObject3 = function _templateObject3() {
+        return data;
+    };
+    return data;
+}
+function _templateObject4() {
+    var data = _tagged_template_literal([
+        "\n  position: relative;\n  display: flex;\n"
+    ]);
+    _templateObject4 = function _templateObject4() {
+        return data;
+    };
+    return data;
+}
+function _templateObject5() {
+    var data = _tagged_template_literal([
+        "\n  flex-grow: 1;\n  transition: margin-top 0.2s, margin-left 0.2s cubic-bezier(0.4, 0, 0.2, 1);\n  transform: translate3d(0, 0, 0);\n  max-width: 100%;\n"
+    ]);
+    _templateObject5 = function _templateObject5() {
+        return data;
+    };
+    return data;
+}
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import throttle from "lodash/throttle";
 import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
@@ -7,188 +71,203 @@ import Flex from "../../components/Box/Flex";
 import Footer from "../../components/Footer";
 import MenuItems from "../../components/MenuItems/MenuItems";
 import { SubMenuItems } from "../../components/SubMenuItems";
-import { useMatchBreakpoints } from "../../hooks";
+import { useMatchBreakpoints } from "../../contexts";
 import CakePrice from "../../components/CakePrice/CakePrice";
 import Logo from "./components/Logo";
 import { MENU_HEIGHT, MOBILE_MENU_HEIGHT, TOP_BANNER_HEIGHT, TOP_BANNER_HEIGHT_MOBILE } from "./config";
-import { NavProps } from "./types";
 import LangSelector from "../../components/LangSelector/LangSelector";
 import { MenuContext } from "./context";
-
-const Wrapper = styled.div`
-  position: relative;
-  width: 100%;
-`;
-
-const StyledNav = styled.nav`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  height: ${MENU_HEIGHT}px;
-  background-color: ${({ theme }) => theme.nav.background};
-  border-bottom: 1px solid ${({ theme }) => theme.colors.cardBorder};
-  transform: translate3d(0, 0, 0);
-
-  padding-left: 16px;
-  padding-right: 16px;
-`;
-
-const FixedContainer = styled.div<{ showMenu: boolean; height: number }>`
-  position: fixed;
-  top: ${({ showMenu, height }) => (showMenu ? 0 : `-${height}px`)};
-  left: 0;
-  transition: top 0.2s;
-  height: ${({ height }) => `${height}px`};
-  width: 100%;
-  z-index: 20;
-`;
-
-const TopBannerContainer = styled.div<{ height: number }>`
-  height: ${({ height }) => `${height}px`};
-  min-height: ${({ height }) => `${height}px`};
-  max-height: ${({ height }) => `${height}px`};
-  width: 100%;
-`;
-
-const BodyWrapper = styled(Box)`
-  position: relative;
-  display: flex;
-`;
-
-const Inner = styled.div<{ isPushed: boolean; showMenu: boolean }>`
-  flex-grow: 1;
-  transition: margin-top 0.2s, margin-left 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  transform: translate3d(0, 0, 0);
-  max-width: 100%;
-`;
-
-const Menu: React.FC<NavProps> = ({
-  linkComponent = "a",
-  userMenu,
-  banner,
-  globalMenu,
-  isDark,
-  toggleTheme,
-  currentLang,
-  setLang,
-  cakePriceUsd,
-  links,
-  subLinks,
-  footerLinks,
-  activeItem,
-  activeSubItem,
-  langs,
-  buyCakeLabel,
-  children,
-}) => {
-  const { isMobile, isMd } = useMatchBreakpoints();
-  const [showMenu, setShowMenu] = useState(true);
-  const refPrevOffset = useRef(typeof window === "undefined" ? 0 : window.pageYOffset);
-
-  const topBannerHeight = isMobile ? TOP_BANNER_HEIGHT_MOBILE : TOP_BANNER_HEIGHT;
-
-  const totalTopMenuHeight = banner ? MENU_HEIGHT + topBannerHeight : MENU_HEIGHT;
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentOffset = window.pageYOffset;
-      const isBottomOfPage = window.document.body.clientHeight === currentOffset + window.innerHeight;
-      const isTopOfPage = currentOffset === 0;
-      // Always show the menu when user reach the top
-      if (isTopOfPage) {
-        setShowMenu(true);
-      }
-      // Avoid triggering anything at the bottom because of layout shift
-      else if (!isBottomOfPage) {
-        if (currentOffset < refPrevOffset.current || currentOffset <= totalTopMenuHeight) {
-          // Has scroll up
-          setShowMenu(true);
-        } else {
-          // Has scroll down
-          setShowMenu(false);
-        }
-      }
-      refPrevOffset.current = currentOffset;
-    };
-    const throttledHandleScroll = throttle(handleScroll, 200);
-
-    window.addEventListener("scroll", throttledHandleScroll);
-    return () => {
-      window.removeEventListener("scroll", throttledHandleScroll);
-    };
-  }, [totalTopMenuHeight]);
-
-  // Find the home link if provided
-  const homeLink = links.find((link) => link.label === "Home");
-
-  const subLinksWithoutMobile = subLinks?.filter((subLink) => !subLink.isMobileOnly);
-  const subLinksMobileOnly = subLinks?.filter((subLink) => subLink.isMobileOnly);
-
-  return (
-    <MenuContext.Provider value={{ linkComponent }}>
-      <Wrapper>
-        <FixedContainer showMenu={showMenu} height={totalTopMenuHeight}>
-          {banner && <TopBannerContainer height={topBannerHeight}>{banner}</TopBannerContainer>}
-          <StyledNav>
-            <Flex>
-              <Logo isDark={isDark} href={homeLink?.href ?? "/"} />
-              {!isMobile && <MenuItems items={links} activeItem={activeItem} activeSubItem={activeSubItem} ml="24px" />}
-            </Flex>
-            <Flex alignItems="center" height="100%">
-              {!isMobile && !isMd && (
-                <Box mr="12px">
-                  <CakePrice showSkeleton={false} cakePriceUsd={cakePriceUsd} />
-                </Box>
-              )}
-              <Box mt="4px">
-                <LangSelector
-                  currentLang={currentLang}
-                  langs={langs}
-                  setLang={setLang}
-                  buttonScale="xs"
-                  color="textSubtle"
-                  hideLanguage
-                />
-              </Box>
-              {globalMenu} {userMenu}
-            </Flex>
-          </StyledNav>
-        </FixedContainer>
-        {subLinks && (
-          <Flex justifyContent="space-around">
-            <SubMenuItems items={subLinksWithoutMobile} mt={`${totalTopMenuHeight + 1}px`} activeItem={activeSubItem} />
-
-            {subLinksMobileOnly?.length > 0 && (
-              <SubMenuItems
-                items={subLinksMobileOnly}
-                mt={`${totalTopMenuHeight + 1}px`}
-                activeItem={activeSubItem}
-                isMobileOnly
-              />
-            )}
-          </Flex>
-        )}
-        <BodyWrapper mt={!subLinks ? `${totalTopMenuHeight + 1}px` : "0"}>
-          <Inner isPushed={false} showMenu={showMenu}>
-            {children}
-            <Footer
-              items={footerLinks}
-              isDark={isDark}
-              toggleTheme={toggleTheme}
-              langs={langs}
-              setLang={setLang}
-              currentLang={currentLang}
-              cakePriceUsd={cakePriceUsd}
-              buyCakeLabel={buyCakeLabel}
-              mb={[`${MOBILE_MENU_HEIGHT}px`, null, "0px"]}
-            />
-          </Inner>
-        </BodyWrapper>
-        {isMobile && <BottomNav items={links} activeItem={activeItem} activeSubItem={activeSubItem} />}
-      </Wrapper>
-    </MenuContext.Provider>
-  );
+var Wrapper = styled.div.withConfig({
+    componentId: "sc-353f3479-0"
+})(_templateObject());
+var StyledNav = styled.nav.withConfig({
+    componentId: "sc-353f3479-1"
+})(_templateObject1(), MENU_HEIGHT, function(param) {
+    var theme = param.theme;
+    return theme.nav.background;
+}, function(param) {
+    var theme = param.theme;
+    return theme.colors.cardBorder;
+});
+var FixedContainer = styled.div.withConfig({
+    componentId: "sc-353f3479-2"
+})(_templateObject2(), function(param) {
+    var showMenu = param.showMenu, height = param.height;
+    return showMenu ? 0 : "-".concat(height, "px");
+}, function(param) {
+    var height = param.height;
+    return "".concat(height, "px");
+});
+var TopBannerContainer = styled.div.withConfig({
+    componentId: "sc-353f3479-3"
+})(_templateObject3(), function(param) {
+    var height = param.height;
+    return "".concat(height, "px");
+}, function(param) {
+    var height = param.height;
+    return "".concat(height, "px");
+}, function(param) {
+    var height = param.height;
+    return "".concat(height, "px");
+});
+var BodyWrapper = styled(Box).withConfig({
+    componentId: "sc-353f3479-4"
+})(_templateObject4());
+var Inner = styled.div.withConfig({
+    componentId: "sc-353f3479-5"
+})(_templateObject5());
+var Menu = function(param) {
+    var _linkComponent = param.linkComponent, linkComponent = _linkComponent === void 0 ? "a" : _linkComponent, banner = param.banner, rightSide = param.rightSide, isDark = param.isDark, toggleTheme = param.toggleTheme, currentLang = param.currentLang, setLang = param.setLang, cakePriceUsd = param.cakePriceUsd, links = param.links, subLinks = param.subLinks, footerLinks = param.footerLinks, activeItem = param.activeItem, activeSubItem = param.activeSubItem, langs = param.langs, buyCakeLabel = param.buyCakeLabel, children = param.children;
+    var ref = useMatchBreakpoints(), isMobile = ref.isMobile, isMd = ref.isMd;
+    var ref1 = useState(true), showMenu = ref1[0], setShowMenu = ref1[1];
+    var refPrevOffset = useRef("object" === "undefined" ? 0 : window.pageYOffset);
+    var topBannerHeight = isMobile ? TOP_BANNER_HEIGHT_MOBILE : TOP_BANNER_HEIGHT;
+    var totalTopMenuHeight = banner ? MENU_HEIGHT + topBannerHeight : MENU_HEIGHT;
+    useEffect(function() {
+        var handleScroll = function() {
+            var currentOffset = window.pageYOffset;
+            var isBottomOfPage = window.document.body.clientHeight === currentOffset + window.innerHeight;
+            var isTopOfPage = currentOffset === 0;
+            // Always show the menu when user reach the top
+            if (isTopOfPage) {
+                setShowMenu(true);
+            } else if (!isBottomOfPage) {
+                if (currentOffset < refPrevOffset.current || currentOffset <= totalTopMenuHeight) {
+                    // Has scroll up
+                    setShowMenu(true);
+                } else {
+                    // Has scroll down
+                    setShowMenu(false);
+                }
+            }
+            refPrevOffset.current = currentOffset;
+        };
+        var throttledHandleScroll = throttle(handleScroll, 200);
+        window.addEventListener("scroll", throttledHandleScroll);
+        return function() {
+            window.removeEventListener("scroll", throttledHandleScroll);
+        };
+    }, [
+        totalTopMenuHeight
+    ]);
+    // Find the home link if provided
+    var homeLink = links.find(function(link) {
+        return link.label === "Home";
+    });
+    var subLinksWithoutMobile = subLinks === null || subLinks === void 0 ? void 0 : subLinks.filter(function(subLink) {
+        return !subLink.isMobileOnly;
+    });
+    var subLinksMobileOnly = subLinks === null || subLinks === void 0 ? void 0 : subLinks.filter(function(subLink) {
+        return subLink.isMobileOnly;
+    });
+    var ref2;
+    return /*#__PURE__*/ _jsx(MenuContext.Provider, {
+        value: {
+            linkComponent: linkComponent
+        },
+        children: /*#__PURE__*/ _jsxs(Wrapper, {
+            children: [
+                /*#__PURE__*/ _jsxs(FixedContainer, {
+                    showMenu: showMenu,
+                    height: totalTopMenuHeight,
+                    children: [
+                        banner && /*#__PURE__*/ _jsx(TopBannerContainer, {
+                            height: topBannerHeight,
+                            children: banner
+                        }),
+                        /*#__PURE__*/ _jsxs(StyledNav, {
+                            children: [
+                                /*#__PURE__*/ _jsxs(Flex, {
+                                    children: [
+                                        /*#__PURE__*/ _jsx(Logo, {
+                                            isDark: isDark,
+                                            href: (ref2 = homeLink === null || homeLink === void 0 ? void 0 : homeLink.href) !== null && ref2 !== void 0 ? ref2 : "/"
+                                        }),
+                                        !isMobile && /*#__PURE__*/ _jsx(MenuItems, {
+                                            items: links,
+                                            activeItem: activeItem,
+                                            activeSubItem: activeSubItem,
+                                            ml: "24px"
+                                        })
+                                    ]
+                                }),
+                                /*#__PURE__*/ _jsxs(Flex, {
+                                    alignItems: "center",
+                                    height: "100%",
+                                    children: [
+                                        !isMobile && !isMd && /*#__PURE__*/ _jsx(Box, {
+                                            mr: "12px",
+                                            children: /*#__PURE__*/ _jsx(CakePrice, {
+                                                showSkeleton: false,
+                                                cakePriceUsd: cakePriceUsd
+                                            })
+                                        }),
+                                        /*#__PURE__*/ _jsx(Box, {
+                                            mt: "4px",
+                                            children: /*#__PURE__*/ _jsx(LangSelector, {
+                                                currentLang: currentLang,
+                                                langs: langs,
+                                                setLang: setLang,
+                                                buttonScale: "xs",
+                                                color: "textSubtle",
+                                                hideLanguage: true
+                                            })
+                                        }),
+                                        rightSide
+                                    ]
+                                })
+                            ]
+                        })
+                    ]
+                }),
+                subLinks && /*#__PURE__*/ _jsxs(Flex, {
+                    justifyContent: "space-around",
+                    children: [
+                        /*#__PURE__*/ _jsx(SubMenuItems, {
+                            items: subLinksWithoutMobile,
+                            mt: "".concat(totalTopMenuHeight + 1, "px"),
+                            activeItem: activeSubItem
+                        }),
+                        (subLinksMobileOnly === null || subLinksMobileOnly === void 0 ? void 0 : subLinksMobileOnly.length) > 0 && /*#__PURE__*/ _jsx(SubMenuItems, {
+                            items: subLinksMobileOnly,
+                            mt: "".concat(totalTopMenuHeight + 1, "px"),
+                            activeItem: activeSubItem,
+                            isMobileOnly: true
+                        })
+                    ]
+                }),
+                /*#__PURE__*/ _jsx(BodyWrapper, {
+                    mt: !subLinks ? "".concat(totalTopMenuHeight + 1, "px") : "0",
+                    children: /*#__PURE__*/ _jsxs(Inner, {
+                        isPushed: false,
+                        showMenu: showMenu,
+                        children: [
+                            children,
+                            /*#__PURE__*/ _jsx(Footer, {
+                                items: footerLinks,
+                                isDark: isDark,
+                                toggleTheme: toggleTheme,
+                                langs: langs,
+                                setLang: setLang,
+                                currentLang: currentLang,
+                                cakePriceUsd: cakePriceUsd,
+                                buyCakeLabel: buyCakeLabel,
+                                mb: [
+                                    "".concat(MOBILE_MENU_HEIGHT, "px"),
+                                    null,
+                                    "0px"
+                                ]
+                            })
+                        ]
+                    })
+                }),
+                isMobile && /*#__PURE__*/ _jsx(BottomNav, {
+                    items: links,
+                    activeItem: activeItem,
+                    activeSubItem: activeSubItem
+                })
+            ]
+        })
+    });
 };
-
 export default Menu;

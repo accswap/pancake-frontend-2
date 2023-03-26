@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-
 /**
  * Use this hook when you want to animate something when it appears on the screen (e.g. when some prop set to true)
  * but when its not on the screen you want it to be fully unmounted and not just hidden or height 0.
@@ -9,20 +8,25 @@ import { useState, useEffect } from "react";
  * This hook "shows" element immediately when the isMounted is true
  * but keeps element mounted for delayTime to let unmounting animation happen, after which you unmount element completely.
  * delayTime should be the same as animation time in most cases.
- */
-const useDelayedUnmount = (isMounted: boolean, delayTime: number): boolean => {
-  const [shouldRender, setShouldRender] = useState(false);
-
-  useEffect(() => {
-    let timeoutId: ReturnType<typeof setTimeout>;
-    if (isMounted && !shouldRender) {
-      setShouldRender(true);
-    } else if (!isMounted && shouldRender) {
-      timeoutId = setTimeout(() => setShouldRender(false), delayTime);
-    }
-    return () => clearTimeout(timeoutId);
-  }, [isMounted, delayTime, shouldRender]);
-  return shouldRender;
+ */ var useDelayedUnmount = function(isMounted, delayTime) {
+    var ref = useState(false), shouldRender = ref[0], setShouldRender = ref[1];
+    useEffect(function() {
+        var timeoutId;
+        if (isMounted && !shouldRender) {
+            setShouldRender(true);
+        } else if (!isMounted && shouldRender) {
+            timeoutId = setTimeout(function() {
+                return setShouldRender(false);
+            }, delayTime);
+        }
+        return function() {
+            return clearTimeout(timeoutId);
+        };
+    }, [
+        isMounted,
+        delayTime,
+        shouldRender
+    ]);
+    return shouldRender;
 };
-
 export default useDelayedUnmount;

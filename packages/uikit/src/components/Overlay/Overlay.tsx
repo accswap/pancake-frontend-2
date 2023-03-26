@@ -1,70 +1,78 @@
-import styled, { css, keyframes } from "styled-components";
-import { FC, useEffect } from "react";
-import { Box, BoxProps } from "../Box";
-
-const unmountAnimation = keyframes`
-    0% {
-      opacity: 1;
-    }
-    100% {
-      opacity: 0;
-    }
-  `;
-
-const mountAnimation = keyframes`
-    0% {
-     opacity: 0;
-    }
-    100% {
-     opacity: 1;
-    }
-  `;
-
-const StyledOverlay = styled(Box)<{ isUnmounting?: boolean }>`
-  position: fixed;
-  top: 0px;
-  left: 0px;
-  width: 100%;
-  height: 100%;
-  background-color: ${({ theme }) => `${theme.colors.text}99`};
-  z-index: 20;
-  will-change: opacity;
-  animation: ${mountAnimation} 350ms ease forwards;
-  ${({ isUnmounting }) =>
-    isUnmounting &&
-    css`
-      animation: ${unmountAnimation} 350ms ease forwards;
-    `}
-`;
-
-const BodyLock = () => {
-  useEffect(() => {
-    document.body.style.cssText = `
-      overflow: hidden;
-    `;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.cssText = `
-        overflow: visible;
-        overflow: overlay;
-      `;
+import _object_spread from "@swc/helpers/src/_object_spread.mjs";
+import _tagged_template_literal from "@swc/helpers/src/_tagged_template_literal.mjs";
+function _templateObject() {
+    var data = _tagged_template_literal([
+        "\n    0% {\n      opacity: 1;\n    }\n    100% {\n      opacity: 0;\n    }\n  "
+    ]);
+    _templateObject = function _templateObject() {
+        return data;
     };
-  }, []);
-
-  return null;
-};
-
-interface OverlayProps extends BoxProps {
-  isUnmounting?: boolean;
+    return data;
 }
-
-export const Overlay: FC<OverlayProps> = (props) => {
-  return (
-    <>
-      <BodyLock />
-      <StyledOverlay role="presentation" {...props} />
-    </>
-  );
+function _templateObject1() {
+    var data = _tagged_template_literal([
+        "\n    0% {\n     opacity: 0;\n    }\n    100% {\n     opacity: 1;\n    }\n  "
+    ]);
+    _templateObject1 = function _templateObject1() {
+        return data;
+    };
+    return data;
+}
+function _templateObject2() {
+    var data = _tagged_template_literal([
+        "\n      animation: ",
+        " 350ms ease forwards;\n    "
+    ]);
+    _templateObject2 = function _templateObject2() {
+        return data;
+    };
+    return data;
+}
+function _templateObject3() {
+    var data = _tagged_template_literal([
+        "\n  position: fixed;\n  top: 0px;\n  left: 0px;\n  width: 100%;\n  height: 100%;\n  background-color: ",
+        ";\n  z-index: 20;\n  will-change: opacity;\n  animation: ",
+        " 350ms ease forwards;\n  ",
+        "\n"
+    ]);
+    _templateObject3 = function _templateObject3() {
+        return data;
+    };
+    return data;
+}
+import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
+import styled, { css, keyframes } from "styled-components";
+import { useEffect } from "react";
+import { Box } from "../Box";
+var unmountAnimation = keyframes(_templateObject());
+var mountAnimation = keyframes(_templateObject1());
+var StyledOverlay = styled(Box).withConfig({
+    componentId: "sc-de82043-0"
+})(_templateObject3(), function(param) {
+    var theme = param.theme;
+    return "".concat(theme.colors.text99);
+}, mountAnimation, function(param) {
+    var isUnmounting = param.isUnmounting;
+    return isUnmounting && css(_templateObject2(), unmountAnimation);
+});
+var BodyLock = function() {
+    useEffect(function() {
+        document.body.style.cssText = "\n      overflow: hidden;\n    ";
+        document.body.style.overflow = "hidden";
+        return function() {
+            document.body.style.cssText = "\n        overflow: visible;\n        overflow: overlay;\n      ";
+        };
+    }, []);
+    return null;
 };
-
+export var Overlay = function(props) {
+    return /*#__PURE__*/ _jsxs(_Fragment, {
+        children: [
+            /*#__PURE__*/ _jsx(BodyLock, {}),
+            /*#__PURE__*/ _jsx(StyledOverlay, _object_spread({
+                role: "presentation"
+            }, props))
+        ]
+    });
+};
 export default Overlay;

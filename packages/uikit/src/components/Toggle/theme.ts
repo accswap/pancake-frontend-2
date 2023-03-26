@@ -1,13 +1,7 @@
 import { darkColors, lightColors } from "../../theme/colors";
-
-export type ToggleTheme = {
-  handleBackground: string;
+export var light = {
+    handleBackground: lightColors.backgroundAlt
 };
-
-export const light: ToggleTheme = {
-  handleBackground: lightColors.backgroundAlt,
-};
-
-export const dark: ToggleTheme = {
-  handleBackground: darkColors.backgroundAlt,
+export var dark = {
+    handleBackground: darkColors.backgroundAlt
 };
